@@ -1,0 +1,7 @@
+SKINTYPEの基本的な使い方
+
+使用例:
+例1: SKINTYPE()
+例2: SKINTYPE() = "MedievalFantasy"
+
+現在使用しているスキンのタイプを返します。返り値は実行環境によって変わります。

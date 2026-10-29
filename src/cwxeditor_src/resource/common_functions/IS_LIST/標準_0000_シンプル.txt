@@ -1,0 +1,8 @@
+IS_LISTの基本的な使い方
+
+使用例:
+例1: IS_LIST(LIST(1, 2)) = TRUE
+例2: IS_LIST("LIST(1, 2)") = FALSE
+例3: IS_LIST(42) = FALSE
+
+引数の値がリスト型ならTRUE、それ以外ならFALSEを返します。

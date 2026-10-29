@@ -1,0 +1,16 @@
+TalkMessageの基本的な使い方
+
+用途:
+指定した画像とメッセージを表示します。
+
+主な属性:
+- path: 話者画像
+- boundarycheck: 画像を画面内に収めるか
+- singleline: 単行表示にするか
+- Text: 表示文
+
+XML例:
+<Talk type="Message" boundarycheck="True" path="Material/宿の亭主.bmp">
+<Text>「その依頼に興味があるのかね？」</Text>
+</Talk>
+

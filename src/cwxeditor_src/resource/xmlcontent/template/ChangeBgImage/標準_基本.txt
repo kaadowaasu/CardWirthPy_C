@@ -1,0 +1,23 @@
+ChangeBgImageの基本的な使い方
+
+用途:
+背景セルを追加または置換し、背景を切り替えます。
+
+主な属性:
+- transition: 切り替え方式
+- transitionspeed: 切り替えウェイト
+- BgImages: 配置する背景セル
+
+XML例:
+<Change type="BgImage" transition="Default" transitionspeed="5">
+<BgImages>
+<BgImage smoothing="Default" mask="True" cellname="テンプレート">
+<ImagePath>Bill.png</ImagePath>
+<Flag>フラグ\汎用1</Flag>
+<Location left="118" top="26"/>
+<Size width="400" height="370"/>
+<Layer>500</Layer>
+</BgImage>
+</BgImages>
+</Change>
+

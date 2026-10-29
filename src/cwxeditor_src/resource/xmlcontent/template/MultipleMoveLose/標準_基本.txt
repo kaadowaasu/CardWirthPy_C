@@ -1,0 +1,20 @@
+MultipleMoveLoseの基本的な使い方
+
+用途:
+複数の背景セルの移動と削除を一度に行います。
+
+主な属性:
+- Moves: 移動設定
+- Loses: 削除設定
+- transition: 切り替え方式
+
+XML例:
+<MultipleMoveLose type="BgImage" transition="Default" transitionspeed="5" doanime="False">
+<Moves>
+<Move cellname="移動するセル" positiontype="Relative" x="50" y="50"/>
+</Moves>
+<Loses>
+<Lose cellname="削除するセル"/>
+</Loses>
+</MultipleMoveLose>
+

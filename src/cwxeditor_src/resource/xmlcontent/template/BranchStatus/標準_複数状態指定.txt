@@ -1,0 +1,13 @@
+BranchStatusで複数の状態を指定する例
+
+用途:
+statusへ状態名を空白区切りで指定します。andor="and"は全条件、andor="or"はいずれかの条件が成立した場合に成功します。target_varを指定すると、変数に入った対象参照番号のキャラクタだけを判定します。
+
+主な属性:
+- status: 空白区切りの状態名
+- andor: andまたはor
+- targetm: 判定対象
+- target_var: 対象への参照番号が入った変数名。指定時はtargetmより優先
+
+XML例:
+<Branch type="Status" status="Poison Bind" andor="and" target_var="コモン\\対象番号"/>

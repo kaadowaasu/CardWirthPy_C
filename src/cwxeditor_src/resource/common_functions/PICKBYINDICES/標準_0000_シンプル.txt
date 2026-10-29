@@ -1,0 +1,8 @@
+PICKBYINDICESの基本的な使い方
+
+使用例:
+例1: PICKBYINDICES(LIST("A", "B", "C"), LIST(1, 3)) = LIST("A", "C")
+例2: PICKBYINDICES(LIST(10, 20, 30), LIST(2, 2)) = LIST(20, 20)
+例3: PICKBYINDICES(LIST("A", "B"), LIST(3)) -> エラー
+
+第2引数の位置リストに従って、第1引数のリストから要素を取り出します。位置は1から数えます。

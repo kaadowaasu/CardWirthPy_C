@@ -1,0 +1,8 @@
+LUNIQUEの基本的な使い方
+
+使用例:
+例1: LUNIQUE(LIST(1, 2, 1, 3, 2)) = LIST(1, 2, 3)
+例2: LUNIQUE(LIST("A", "B", "A")) = LIST("A", "B")
+例3: LUNIQUE(LIST(TRUE, FALSE, TRUE)) = LIST(TRUE, FALSE)
+
+リストから重複要素を除き、最初に現れた順序を保った新しいリストを返します。

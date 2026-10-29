@@ -1,0 +1,12 @@
+BranchFlagValueの基本的な使い方
+
+用途:
+2つのフラグの値を比較して分岐します。
+
+主な属性:
+- from: 比較元フラグ
+- to: 比較先フラグ
+
+XML例:
+<Branch type="FlagValue" from="フラグ\汎用1" to="フラグ\汎用2"/>
+

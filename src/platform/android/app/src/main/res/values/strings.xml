@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Product flavors override this label for packaged applications. -->
+    <string name="app_name">CardWirthPy_C</string>
+</resources>

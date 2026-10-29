@@ -1,0 +1,23 @@
+Effectで複数の回復・解除をまとめて行う例
+
+用途:
+回復と状態解除のモーションをMotionsへ順番に並べます。
+
+主な属性:
+- targetm: 回復対象
+- damagetype: Maxで最大回復
+
+XML例:
+<Effect name="全回復" targetm="Party" effecttype="None" resisttype="Unfail">
+<Motions>
+<Motion type="Heal" element="All" damagetype="Max" value="1"/>
+<Motion type="DisParalyze" element="All" damagetype="Max" value="1"/>
+<Motion type="DisPoison" element="All" damagetype="Max" value="1"/>
+<Motion type="Normal" element="All"/>
+<Motion type="DisBind" element="All"/>
+<Motion type="DisSilence" element="All"/>
+<Motion type="DisAntiMagic" element="All"/>
+</Motions>
+<KeyCodes/>
+</Effect>
+

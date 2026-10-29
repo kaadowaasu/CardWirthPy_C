@@ -1,0 +1,13 @@
+BranchCouponの基本的な使い方
+
+用途:
+対象が指定した称号を所持しているかどうかで分岐します。
+
+主な属性:
+- targets: 判定対象
+- coupon: 称号名
+- invert: 判定結果を反転するか
+
+XML例:
+<Branch type="Coupon" targets="Random" coupon="＿♂"/>
+

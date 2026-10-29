@@ -1,0 +1,8 @@
+INPOLYGONの基本的な使い方
+
+使用例:
+例1: INPOLYGON(LIST(LIST(0, 0), LIST(10, 0), LIST(10, 10), LIST(0, 10)), LIST(5, 5)) = TRUE
+例2: INPOLYGON(LIST(0, 0, 10, 0, 10, 10, 0, 10), LIST(0, 0)) = TRUE
+例3: INPOLYGON(LIST(LIST(0, 0), LIST(10, 0), LIST(10, 10), LIST(0, 10)), LIST(15, 5)) = FALSE
+
+点が多角形の内部または境界上にあるかを返します。多角形は点のリストまたは平坦な座標リストで指定できます。

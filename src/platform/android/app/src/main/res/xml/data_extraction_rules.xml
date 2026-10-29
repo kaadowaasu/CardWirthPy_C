@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- API 31 and later. The same policy applies to cloud restore and direct
+     device transfer so immutable assets are always rebuilt by the new APK. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="app/Data" />
+        <exclude domain="file" path="app/resource" />
+        <exclude domain="file" path="app/.cardwirth-assets-version" />
+        <exclude domain="file" path="app/.cardwirth-assets-staging" />
+        <exclude domain="file" path="app/.cardwirth-assets-backup" />
+        <exclude domain="file" path="Data" />
+        <exclude domain="file" path="Cache" />
+        <exclude domain="file" path="Temp" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="app/Data" />
+        <exclude domain="file" path="app/resource" />
+        <exclude domain="file" path="app/.cardwirth-assets-version" />
+        <exclude domain="file" path="app/.cardwirth-assets-staging" />
+        <exclude domain="file" path="app/.cardwirth-assets-backup" />
+        <exclude domain="file" path="Data" />
+        <exclude domain="file" path="Cache" />
+        <exclude domain="file" path="Temp" />
+    </device-transfer>
+</data-extraction-rules>

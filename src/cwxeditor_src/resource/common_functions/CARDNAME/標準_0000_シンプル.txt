@@ -1,0 +1,8 @@
+CARDNAMEの基本的な使い方
+
+使用例:
+例1: CARDNAME(SELECTEDCARD())
+例2: CARDNAME(CARDINFO(1, 2)) = "居合斬り"
+例3: CARDNAME(0) -> エラー
+
+指定カードの名称を返します。返り値はカードによって変わります。

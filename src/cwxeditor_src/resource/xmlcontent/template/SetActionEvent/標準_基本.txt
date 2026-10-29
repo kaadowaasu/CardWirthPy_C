@@ -1,0 +1,14 @@
+SetActionEventの基本的な使い方
+
+用途:
+指定したパッケージまたはアクションを実行対象に設定します。
+
+主な属性:
+- type: アクション種別
+- update: 更新値
+- action: アクションID
+- fps: フレームレート
+
+XML例:
+<Action type="package" update="1" action="2" fps="30"></Action>
+

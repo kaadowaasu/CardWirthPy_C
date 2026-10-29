@@ -1,0 +1,4 @@
+ISNOVELMODEの基本的な使い方
+
+Novelモードが有効ならTRUE、通常モードならFALSEを返します。
+例: ISNOVELMODE()

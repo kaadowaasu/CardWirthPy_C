@@ -1,0 +1,13 @@
+LoseBeastの基本的な使い方
+
+用途:
+指定した召喚獣カードを喪失させます。
+
+主な属性:
+- id: カードID
+- targets: 検索範囲
+- number: 枚数。0は全て
+
+XML例:
+<Lose type="Beast" id="1" targets="Field" number="0"/>
+

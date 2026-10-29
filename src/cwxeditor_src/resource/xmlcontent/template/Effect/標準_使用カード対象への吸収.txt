@@ -1,0 +1,17 @@
+Effectで使用カードの対象から吸収する例
+
+用途:
+targetmをCardTargetにして使用カードの対象へ効果を適用します。
+
+主な属性:
+- targetm: CardTarget
+- absorbto: 吸収した値の回復先
+
+XML例:
+<Effect targetm="CardTarget" absorbto="Selected" effecttype="PhysicalMagic" resisttype="Unfail" refability="true">
+<Motions>
+<Motion type="Absorb" element="All" damagetype="LevelRatio" value="1"/>
+</Motions>
+<KeyCodes/>
+</Effect>
+

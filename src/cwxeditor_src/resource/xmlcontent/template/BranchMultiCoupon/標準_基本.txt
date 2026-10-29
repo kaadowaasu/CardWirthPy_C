@@ -1,0 +1,17 @@
+BranchMultiCouponの基本的な使い方
+
+用途:
+候補ごとの称号所持状況に応じて多分岐します。空のnameは既定分岐です。
+
+主な属性:
+- targets: 判定対象
+- spchars: 特殊文字を展開するか
+- name: 各分岐の称号名
+
+XML例:
+<Branch type="MultiCoupon" targets="Random">
+<ContentsLine name="＿子供"/>
+<ContentsLine name="＿大人"/>
+<ContentsLine name=""/>
+</Branch>
+

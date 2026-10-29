@@ -1,0 +1,16 @@
+Effectで物理効果を設定する例
+
+用途:
+effecttypeをPhysic、resisttypeをAvoidにして回避可能な物理効果を設定します。
+
+主な属性:
+- effecttype: Physic
+- resisttype: Avoid
+- visual: 視覚効果
+
+XML例:
+<Effect targetm="Random" visual="Reverse" effecttype="Physic" resisttype="Avoid" level="0" successrate="5">
+<Motions/>
+<KeyCodes/>
+</Effect>
+

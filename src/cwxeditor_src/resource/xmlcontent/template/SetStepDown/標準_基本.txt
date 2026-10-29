@@ -1,0 +1,11 @@
+SetStepDownの基本的な使い方
+
+用途:
+ステップ値を1減らします。
+
+主な属性:
+- step: ステップ名
+
+XML例:
+<Set type="StepDown" step="ステップ\汎用1"/>
+

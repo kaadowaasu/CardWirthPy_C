@@ -1,0 +1,13 @@
+#pragma once
+
+// UIの実装は一つに統一し、
+// 別経路の実装を設けない。
+#include <cstdint>
+#include "cw/lib/compat.hpp"
+#include "cw/dialog/presentation.hpp"
+#include "cw/fwd.hpp"
+namespace cw::debug::selectedcard {class SelectedCardDialog:public ::cw::lib::Dialog,public ::cw::dialog::DialogPresentationProvider,public std::enable_shared_from_this<SelectedCardDialog>{public:enum class NodeKind{Root,Category,Card};struct TreeNode{::cw::lib::String label{},icon{};std::optional<std::shared_ptr<::cw::header::CardHeader>>header{};std::size_t parent{};NodeKind kind{NodeKind::Root};bool expanded{};bool selectable{true};};static constexpr ::cw::lib::Integer kIdOk=5100,kIdCancel=5101;std::optional<std::shared_ptr<::cw::header::CardHeader>>m__selectedcard{};std::shared_ptr<::cw::lib::Control>m_cards{},m_cnclbtn{},m_imglist{},m_okbtn{};bool m_cwpy_debug{},m_ok_enabled{},m_presentation_finished{};std::vector<TreeNode>m_tree{};std::optional<std::size_t>m_selection{},m_scroll_index{};::cw::lib::Integer m_modal_result{-1},m_presentation_scroll{};std::function<void(std::optional<std::shared_ptr<::cw::header::CardHeader>>)>m_on_ok{};std::uintptr_t m_native_parent_handle{};~SelectedCardDialog() override;void initialize(std::shared_ptr<::cw::lib::Window>,std::vector<std::tuple<::cw::lib::String,std::vector<std::shared_ptr<::cw::header::CardHeader>>>>,std::optional<std::shared_ptr<::cw::header::CardHeader>>);bool show_modal();void _do_layout();void _bind();void _changed_selection();void OnTreeSelChanged(std::shared_ptr<::cw::lib::Window>);void OnTreeDClick(std::shared_ptr<::cw::lib::Window>);void OnOkBtn(std::shared_ptr<::cw::lib::Window>);std::optional<std::shared_ptr<::cw::header::CardHeader>>get_selectedcard();void set_selection_index(std::optional<::cw::lib::Integer>);::cw::lib::Integer get_modal_result()const;[[nodiscard]]::cw::dialog::DialogPresentation dialog_presentation()override;void dialog_presentation_action(::cw::dialog::DialogPresentationAction,int)override;void dialog_presentation_key(::cw::dialog::DialogPresentationKey,bool,::cw::dialog::DialogPresentationModifiers)override;void dialog_presentation_enter(::cw::dialog::DialogPresentationModifiers)override;void dialog_presentation_scroll(float,float,int)override;[[nodiscard]]bool dialog_presentation_finished()const noexcept override;void dialog_presentation_complete()override;};
+
+class SelectedCardUiBackend : public ::cw::lib::Object { public: virtual ~SelectedCardUiBackend()=default; virtual void show(SelectedCardDialog*); virtual void layout(SelectedCardDialog*); virtual void refresh(SelectedCardDialog*); virtual void close(SelectedCardDialog*); };
+std::shared_ptr<SelectedCardUiBackend> get_ui_backend();
+void main();}

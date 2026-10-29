@@ -1,0 +1,8 @@
+CARDLEVELの基本的な使い方
+
+使用例:
+例1: CARDLEVEL(SELECTEDCARD())
+例2: CARDLEVEL(CARDINFO(1, 2)) <= CASTLEVEL(SELECTED())
+例3: CARDLEVEL(1) -> エラー
+
+指定カードの適性レベルを返します。返り値はカードによって変わります。

@@ -1,0 +1,13 @@
+BranchStatusの基本的な使い方
+
+用途:
+対象の状態が指定条件を満たすかどうかで分岐します。target_varを指定すると、対象への参照番号が入った変数の対象だけを判定します。
+
+主な属性:
+- status: 状態名
+- targetm: 判定対象
+- target_var: 対象への参照番号が入った変数名。指定時はtargetmより優先
+- andor: 複数状態の結合方法
+
+XML例:
+<Branch type="Status" status="Active" target_var="コモン\\対象番号"/>

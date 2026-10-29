@@ -1,0 +1,14 @@
+SetVariantStrでCDATAを使う例
+
+用途:
+XML記号を含む文字列はCDATA内へ記述できます。
+
+主な属性:
+- variant: 代入先変数
+- insert: 既存値へ追加するか
+
+XML例:
+<Set type="VariantStr" variant="コモン\汎用1" insert="False"><![CDATA[
+<Motion type="Damage" element="All" damagetype="Normal" value="1"/>
+]]></Set>
+

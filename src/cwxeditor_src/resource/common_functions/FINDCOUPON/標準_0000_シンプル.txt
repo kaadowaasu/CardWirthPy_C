@@ -1,0 +1,8 @@
+FINDCOUPONの基本的な使い方
+
+使用例:
+例1: FINDCOUPON(SELECTED(), "ゴブリン退治")
+例2: FINDCOUPON(SELECTED(), "*退治")
+例3: FINDCOUPON(1, "称号A", 2)
+
+指定キャラクターの称号を検索し、見つかった位置を返します。返り値は所持称号によって変わります。

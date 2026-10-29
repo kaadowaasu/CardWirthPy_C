@@ -1,0 +1,22 @@
+ChangeBgImageでPCセルの番号に変数を使う例
+
+用途:
+PCNumberへ変数参照を記述し、表示するメンバ番号を変数から取得します。
+
+主な属性:
+- PCNumber: 表示するメンバ番号または変数参照
+- cellname: セル名
+
+XML例:
+<Change type="BgImage" transition="Default" transitionspeed="5">
+<BgImages>
+<PCCell smoothing="Default" cellname="プレイヤーセル">
+<PCNumber>@コモン\汎用1@</PCNumber>
+<Flag/>
+<Location left="280" top="241"/>
+<Size width="74" height="94"/>
+<Layer>400</Layer>
+</PCCell>
+</BgImages>
+</Change>
+

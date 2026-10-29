@@ -1,0 +1,312 @@
+diff --git a/android-project/app/src/main/java/org/libsdl/app/SDLInputConnection.java b/android-project/app/src/main/java/org/libsdl/app/SDLInputConnection.java
+index fdc2994..87b84ef 100644
+--- a/android-project/app/src/main/java/org/libsdl/app/SDLInputConnection.java
++++ b/android-project/app/src/main/java/org/libsdl/app/SDLInputConnection.java
+@@ -63,6 +63,15 @@ class SDLInputConnection extends BaseInputConnection
+         return true;
+     }
+ 
++    // CardWirth: finishing conversion must publish the final value even when
++    // the IME uses finishComposingText instead of a separate commitText call.
++    @Override
++    public boolean finishComposingText() {
++        if (!super.finishComposingText()) return false;
++        updateText();
++        return true;
++    }
++
+     @Override
+     public boolean deleteSurroundingText(int beforeLength, int afterLength) {
+         // Workaround to capture backspace key. Ref: http://stackoverflow.com/questions>/14560344/android-backspace-in-webview-baseinputconnection
+@@ -89,6 +98,16 @@ class SDLInputConnection extends BaseInputConnection
+         }
+ 
+         String text = content.toString();
++        // CardWirth: preedit is not a committed edit. Forward it through SDL's
++        // composition event so Japanese conversion cannot repeatedly mutate
++        // the model or activate search/validation callbacks as committed text.
++        final int composingStart = getComposingSpanStart(content);
++        final int composingEnd = getComposingSpanEnd(content);
++        if (composingStart >= 0 && composingEnd > composingStart) {
++            nativeSetComposingText(text.substring(composingStart, composingEnd));
++            return;
++        }
++        nativeSetComposingText("");
+         int compareLength = Math.min(text.length(), mCommittedText.length());
+         int matchLength, offset;
+ 
+@@ -131,6 +150,8 @@ class SDLInputConnection extends BaseInputConnection
+ 
+     public static native void nativeCommitText(String text, int newCursorPosition);
+ 
++    public static native void nativeSetComposingText(String text);
++
+     public static native void nativeGenerateScancodeForUnichar(char c);
+ }
+ 
+diff --git a/src/core/android/SDL_android.c b/src/core/android/SDL_android.c
+index c4f517d..1f6211f 100644
+--- a/src/core/android/SDL_android.c
++++ b/src/core/android/SDL_android.c
+@@ -261,6 +261,8 @@ static JNINativeMethod SDLActivity_tab[] = {
+ };
+ 
+ // Java class SDLInputConnection
++JNIEXPORT void JNICALL SDL_JAVA_INTERFACE_INPUT_CONNECTION(nativeSetComposingText)(
++    JNIEnv *env, jclass cls, jstring text);
+ JNIEXPORT void JNICALL SDL_JAVA_INTERFACE_INPUT_CONNECTION(nativeCommitText)(
+     JNIEnv *env, jclass cls,
+     jstring text, jint newCursorPosition);
+@@ -270,6 +272,7 @@ JNIEXPORT void JNICALL SDL_JAVA_INTERFACE_INPUT_CONNECTION(nativeGenerateScancod
+     jchar chUnicode);
+ 
+ static JNINativeMethod SDLInputConnection_tab[] = {
++    { "nativeSetComposingText", "(Ljava/lang/String;)V", SDL_JAVA_INTERFACE_INPUT_CONNECTION(nativeSetComposingText) },
+     { "nativeCommitText", "(Ljava/lang/String;I)V", SDL_JAVA_INTERFACE_INPUT_CONNECTION(nativeCommitText) },
+     { "nativeGenerateScancodeForUnichar", "(C)V", SDL_JAVA_INTERFACE_INPUT_CONNECTION(nativeGenerateScancodeForUnichar) }
+ };
+@@ -1589,6 +1592,16 @@ JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(nativeFocusChanged)(
+     SDL_UnlockMutex(Android_ActivityMutex);
+ }
+ 
++// CardWirth: preserve the distinction between IME preedit and committed text.
++JNIEXPORT void JNICALL SDL_JAVA_INTERFACE_INPUT_CONNECTION(nativeSetComposingText)(
++    JNIEnv *env, jclass cls, jstring text)
++{
++    const char *utftext = (*env)->GetStringUTFChars(env, text, NULL);
++    if (!utftext) return;
++    SDL_SendEditingText(utftext, SDL_utf8strlen(utftext), 0);
++    (*env)->ReleaseStringUTFChars(env, text, utftext);
++}
++
+ JNIEXPORT void JNICALL SDL_JAVA_INTERFACE_INPUT_CONNECTION(nativeCommitText)(
+     JNIEnv *env, jclass cls,
+     jstring text, jint newCursorPosition)
+diff --git a/src/video/emscripten/SDL_emscriptenvideo.c b/src/video/emscripten/SDL_emscriptenvideo.c
+index 942809c..b13eca3 100644
+--- a/src/video/emscripten/SDL_emscriptenvideo.c
++++ b/src/video/emscripten/SDL_emscriptenvideo.c
+@@ -32,6 +32,73 @@
+ #include "SDL_emscriptenframebuffer.h"
+ #include "SDL_emscriptenevents.h"
+ #include "SDL_emscriptenmouse.h"
++#include "SDL_emscriptentextinput.h"
++
++// CardWirth addition. DOM callbacks publish owned SDL events immediately so
++// text and mouse/key events retain browser ordering, including pthread builds.
++// Do not call application editing code or read its focus state on the JS thread.
++EMSCRIPTEN_KEEPALIVE void Emscripten_SendTextInput(int window_id, const char *text, int composing)
++{
++    SDL_Event event;
++    SDL_zero(event);
++    if (composing >= 2 && composing <= 4) {
++        // Soft keyboards can send beforeinput without any DOM key event.
++        // Publish the same SDL key events used by the physical keyboard.
++        event.type = SDL_EVENT_KEY_DOWN;
++        event.key.windowID = window_id;
++        event.key.which = SDL_GLOBAL_KEYBOARD_ID;
++        event.key.scancode = composing == 2 ? SDL_SCANCODE_BACKSPACE :
++                             composing == 3 ? SDL_SCANCODE_DELETE : SDL_SCANCODE_RETURN;
++        event.key.key = composing == 2 ? SDLK_BACKSPACE :
++                        composing == 3 ? SDLK_DELETE : SDLK_RETURN;
++        event.key.down = true;
++        SDL_PushEvent(&event);
++        event.type = SDL_EVENT_KEY_UP;
++        event.key.down = false;
++        SDL_PushEvent(&event);
++        return;
++    }
++    // Cancelling conversion still has to clear the visible preedit.
++    if (!composing && text && !*text) composing = 1;
++    event.type = composing ? SDL_EVENT_TEXT_EDITING : SDL_EVENT_TEXT_INPUT;
++    if (!text || !SDL_EventEnabled(event.type)) return;
++    if (!composing && (!*text || SDL_iscntrl((unsigned char)*text))) return;
++    const char *owned = SDL_CreateTemporaryString(text);
++    if (!owned) return;
++    if (composing) {
++        event.edit.windowID = window_id;
++        event.edit.text = owned;
++        event.edit.start = SDL_utf8strlen(text);
++    } else {
++        event.text.windowID = window_id;
++        event.text.text = owned;
++    }
++    SDL_PushEvent(&event);
++}
++
++static bool Emscripten_StartTextInput(SDL_VideoDevice *_this, SDL_Window *window, SDL_PropertiesID props)
++{
++    Emscripten_PublishTextInput(true, true, window);
++    return true;
++}
++
++static bool Emscripten_StopTextInput(SDL_VideoDevice *_this, SDL_Window *window)
++{
++    Emscripten_PublishTextInput(false, true, window);
++    return true;
++}
++
++static bool Emscripten_UpdateTextInputArea(SDL_VideoDevice *_this, SDL_Window *window)
++{
++    if (SDL_TextInputActive(window)) Emscripten_PublishTextInput(true, false, window);
++    return true;
++}
++
++static bool Emscripten_ClearComposition(SDL_VideoDevice *_this, SDL_Window *window)
++{
++    if (SDL_TextInputActive(window)) Emscripten_PublishTextInput(true, true, window);
++    return true;
++}
+ 
+ #define EMSCRIPTENVID_DRIVER_NAME "emscripten"
+ 
+@@ -154,6 +221,10 @@ static SDL_VideoDevice *Emscripten_CreateDevice(void)
+     device->SetDisplayMode = Emscripten_SetDisplayMode;
+ 
+     device->PumpEvents = Emscripten_PumpEvents;
++    device->StartTextInput = Emscripten_StartTextInput;
++    device->StopTextInput = Emscripten_StopTextInput;
++    device->UpdateTextInputArea = Emscripten_UpdateTextInputArea;
++    device->ClearComposition = Emscripten_ClearComposition;
+ 
+     device->CreateSDLWindow = Emscripten_CreateWindow;
+     device->SetWindowTitle = Emscripten_SetWindowTitle;
+diff --git a/src/video/uikit/SDL_uikitviewcontroller.m b/src/video/uikit/SDL_uikitviewcontroller.m
+index e9b48c2..c4f56f0 100644
+--- a/src/video/uikit/SDL_uikitviewcontroller.m
++++ b/src/video/uikit/SDL_uikitviewcontroller.m
+@@ -568,6 +568,8 @@ static void SDLCALL SDL_HideHomeIndicatorHintChanged(void *userdata, const char
+ - (void)textFieldTextDidChange:(NSNotification *)notification
+ {
+     if (textField.markedTextRange == nil) {
++        // CardWirth: acknowledge conversion before publishing committed text.
++        SDL_SendEditingText("", 0, 0);
+         if (isOTPMode && labs((NSInteger)textField.text.length - (NSInteger)committedText.length) != 1) {
+             return;
+         }
+@@ -604,6 +606,12 @@ static void SDLCALL SDL_HideHomeIndicatorHintChanged(void *userdata, const char
+             SDL_SendKeyboardText([pendingText UTF8String]);
+         }
+         committedText = textField.text;
++    } else {
++        // CardWirth: the hidden UIKit field otherwise leaves Japanese preedit
++        // invisible in both the Engine and Editor until conversion finishes.
++        NSString *preedit = [textField textInRange:textField.markedTextRange];
++        const char *utftext = [preedit UTF8String];
++        if (utftext) SDL_SendEditingText(utftext, (int)SDL_utf8strlen(utftext), 0);
+     }
+ }
+ 
+diff --git a/src/video/emscripten/SDL_emscriptentextinput.h b/src/video/emscripten/SDL_emscriptentextinput.h
+new file mode 100644
+--- /dev/null
++++ b/src/video/emscripten/SDL_emscriptentextinput.h
+@@ -0,0 +1,108 @@
++#pragma once
++
++#if defined(__EMSCRIPTEN__)
++#include <emscripten/emscripten.h>
++
++// CardWirth addition: browser IME needs a DOM editable element. Feed the SDL
++// event queue, not a separate Editor/Engine editing implementation.
++static void Emscripten_PublishTextInput(bool active, bool reset, SDL_Window *window) {
++    const SDL_Rect area=window->text_input_rect;
++    MAIN_THREAD_EM_ASM({
++        let s = Module['sdlIme'];
++        if (!s && !$0) return;
++        if (s && !$0 && s.windowId !== $4) return;
++        if (!s) {
++            const e = document.createElement('textarea');
++            e.setAttribute('aria-label', 'Text input');
++            e.setAttribute('autocomplete', 'off');
++            e.setAttribute('autocapitalize', 'off');
++            e.spellcheck = false;
++            e.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;padding:0;border:0;font-size:16px;-webkit-user-select:text;user-select:text;';
++            document.body.appendChild(e);
++            s = Module['sdlIme'] = ({element:e, active:false, composing:false});
++            // Keep a private sentinel so mobile keyboards can delete even
++            // though the actual document and selection belong to SDL widgets.
++            const empty = () => { e.value = '\u200b'; e.setSelectionRange(1, 1); };
++            s.empty = empty;
++            const push = (text, composing) => {
++                if (!s.active) return;
++                const length = lengthBytesUTF8(text) + 1;
++                const ptr = _malloc(length);
++                if (!ptr) return;
++                try {
++                    stringToUTF8(text, ptr, length);
++                    _Emscripten_SendTextInput(s.windowId, ptr, Number(composing));
++                } finally { _free(ptr); }
++            };
++            e.addEventListener('compositionstart', () => { s.lastCommit = null; s.composing = true; push('', true); });
++            e.addEventListener('compositionupdate', ev => push(ev.data || '', true));
++            e.addEventListener('compositionend', ev => {
++                if (!s.composing) return;
++                s.composing = false;
++                s.lastCommit = ev.data || '';
++                push(ev.data || '', false);
++                empty();
++            });
++            e.addEventListener('beforeinput', ev => {
++                if (!s.active || s.composing || ev.isComposing) return;
++                const command = ({deleteContentBackward:2, deleteContentForward:3,
++                                  insertLineBreak:4, insertParagraph:4})[ev.inputType];
++                if (command) { ev.preventDefault(); push('', command); empty(); }
++            });
++            e.addEventListener('input', ev => {
++                if (s.composing || ev.isComposing) return;
++                if (s.lastCommit !== null && ev.data === s.lastCommit) {
++                    s.lastCommit = null;
++                    empty();
++                    return;
++                }
++                s.lastCommit = null;
++                // Read the value, not event.data: the final input event after
++                // compositionend must not insert the committed text twice.
++                const text = e.value.startsWith('\u200b') ? e.value.slice(1) : e.value;
++                if (text) push(text, false);
++                empty();
++            });
++            e.addEventListener('keydown', ev => {
++                s.lastCommit = null;
++                if (s.composing || ev.isComposing || ev.keyCode === 229 ||
++                    (!ev.ctrlKey && !ev.metaKey && !ev.altKey && ev.key.length === 1))
++                    ev.stopImmediatePropagation();
++                else if (ev.ctrlKey || ev.metaKey ||
++                    ['Enter', 'Tab', 'Backspace', 'Delete', 'Escape', 'Home', 'End',
++                     'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown'].includes(ev.key))
++                    // SDL/shared widgets own these commands. In particular,
++                    // Enter must not also insert a textarea newline.
++                    ev.preventDefault();
++            }, true);
++            e.addEventListener('keyup', ev => {
++                if (s.composing || ev.isComposing || ev.keyCode === 229)
++                    ev.stopImmediatePropagation();
++            }, true);
++            e.addEventListener('keypress', ev => ev.stopImmediatePropagation(), true);
++            // Mobile browsers may require an actual touch gesture to show
++            // their keyboard, even after StartTextInput has focused the field.
++            document.addEventListener('pointerup', ev => {
++                if (s.active && ev.target === Module['canvas']) e.focus({preventScroll:true});
++            }, true);
++        }
++        const e = s.element;
++        if ($1 || !$0) {
++            s.active = false;
++            s.composing = false;
++            s.lastCommit = null;
++            if (document.activeElement === e) e.blur();
++            s.empty();
++        }
++        s.active = !!$0;
++        s.windowId = $4;
++        if (!s.active) { if (document.activeElement === e) e.blur(); return; }
++        const canvas = Module['canvas'];
++        const rect = canvas ? canvas.getBoundingClientRect() : ({left:0, top:0, width:1, height:1});
++        e.style.left = (rect.left + $2 * rect.width / Math.max(1, $5)) + 'px';
++        e.style.top = (rect.top + $3 * rect.height / Math.max(1, $6)) + 'px';
++        if (document.activeElement === canvas || document.activeElement === document.body || $1)
++            e.focus({preventScroll:true});
++    }, active, reset, area.x, area.y + area.h, window->id, window->w, window->h);
++}
++#endif

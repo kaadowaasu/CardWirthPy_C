@@ -1,0 +1,8 @@
+LGETRANDOMの基本的な使い方
+
+使用例:
+例1: LGETRANDOM(LIST(1, 2, 3, 4))
+例2: LGETRANDOM(LIST("確定")) = "確定"
+例3: LGETRANDOM(LIST()) -> エラー
+
+リストからランダムに1要素を返します。空のリストはエラーです。

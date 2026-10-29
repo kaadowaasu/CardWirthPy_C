@@ -1,0 +1,11 @@
+BranchPartyNumberの基本的な使い方
+
+用途:
+パーティ人数が指定値以上かどうかで分岐します。
+
+主な属性:
+- value: 基準人数
+
+XML例:
+<Branch type="PartyNumber" value="4"/>
+

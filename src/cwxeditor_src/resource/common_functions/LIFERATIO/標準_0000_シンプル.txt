@@ -1,0 +1,8 @@
+LIFERATIOの基本的な使い方
+
+使用例:
+例1: LIFERATIO(SELECTED())
+例2: LIFERATIO(1) < 0.5
+例3: LIFERATIO(SELECTED()) = 0
+
+指定キャラクターの現在生命力を最大生命力で割った比率を返します。返り値は現在の状態によって変わります。

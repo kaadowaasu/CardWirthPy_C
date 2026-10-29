@@ -1,0 +1,11 @@
+GetMoneyの基本的な使い方
+
+用途:
+所持金を増やします。
+
+主な属性:
+- value: 増加額
+
+XML例:
+<Get type="Money" value="600"/>
+

@@ -1,0 +1,22 @@
+ReplaceBgImageの基本的な使い方
+
+用途:
+名前に一致する背景セルを別のセルへ差し替えます。
+
+主な属性:
+- cellname: 差し替えるセル名
+- BgImages: 差し替え先の背景セル
+- doanime: JPYアニメーションを実行するか
+
+XML例:
+<Replace type="BgImage" transition="Default" transitionspeed="5" cellname="テンプレート" doanime="False">
+<BgImages>
+<BgImage smoothing="Default" mask="True" cellname="差し替え後">
+<ImagePath>Book.png</ImagePath>
+<Flag/>
+<Location left="69" top="39"/>
+<Size width="460" height="280"/>
+</BgImage>
+</BgImages>
+</Replace>
+

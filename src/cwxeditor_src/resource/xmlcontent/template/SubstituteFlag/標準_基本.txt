@@ -1,0 +1,12 @@
+SubstituteFlagの基本的な使い方
+
+用途:
+別のフラグ値を指定したフラグへ代入します。
+
+主な属性:
+- from: 代入元フラグ
+- to: 代入先フラグ
+
+XML例:
+<Substitute type="Flag" from="フラグ\汎用1" to="フラグ\汎用2"/>
+

@@ -1,0 +1,12 @@
+BranchFlagの基本的な使い方
+
+用途:
+フラグの真偽で分岐します。
+
+主な属性:
+- flag: フラグ名
+- invert: 判定結果を反転するか
+
+XML例:
+<Branch type="Flag" flag="フラグ\汎用1"/>
+

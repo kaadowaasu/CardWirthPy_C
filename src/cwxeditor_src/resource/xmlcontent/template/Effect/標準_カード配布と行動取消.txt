@@ -1,0 +1,19 @@
+Effectでカード配布や行動取消を行う例
+
+用途:
+数値を使わない特殊モーションをMotionsへ並べます。
+
+主な属性:
+- Motion.type: 実行する効果
+- element: 効果属性
+
+XML例:
+<Effect targetm="Selected" effecttype="None" resisttype="Unfail">
+<Motions>
+<Motion type="DealAttackCard" element="All"/>
+<Motion type="DealSkillCard" element="All"/>
+<Motion type="CancelAction" element="All"/>
+</Motions>
+<KeyCodes/>
+</Effect>
+

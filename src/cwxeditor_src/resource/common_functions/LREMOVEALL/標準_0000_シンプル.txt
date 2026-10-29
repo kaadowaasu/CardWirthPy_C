@@ -1,0 +1,8 @@
+LREMOVEALLの基本的な使い方
+
+使用例:
+例1: LREMOVEALL("所持品", "薬草") = TRUE
+例2: LREMOVEALL("数値一覧", 0) = TRUE
+例3: LREMOVEALL("フラグ一覧", FALSE) = TRUE
+
+第1引数で指定したリスト変数から、指定値と同じ要素をすべて削除します。

@@ -1,0 +1,8 @@
+COUPONVALUEの基本的な使い方
+
+使用例:
+例1: COUPONVALUE(SELECTED(), "ゴブリン退治")
+例2: COUPONVALUE(1, "称号A") >= 10
+例3: COUPONVALUE(SELECTED(), "称号B")
+
+指定キャラクターが持つ称号の得点を返します。返り値は所持称号によって変わります。

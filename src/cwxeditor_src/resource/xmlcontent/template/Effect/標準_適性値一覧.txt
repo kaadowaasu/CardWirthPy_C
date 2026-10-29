@@ -1,0 +1,15 @@
+Effectで適性値を指定する例
+
+用途:
+physicalとmentalを組み合わせて効果の適性を指定します。
+
+主な属性:
+- physical: Dex、Agl、Int、Str、Vit、Min
+- mental: Aggressive、Unaggressive、Cheerful、Uncheerful、Brave、Unbrave、Cautious、Uncautious、Trickish、Untrickish
+
+XML例:
+<Effect physical="Dex" mental="Aggressive" refability="true" targetm="Selected" effecttype="Physic" resisttype="Avoid">
+<Motions/>
+<KeyCodes/>
+</Effect>
+

@@ -1,0 +1,13 @@
+LoseItemの基本的な使い方
+
+用途:
+指定したアイテムカードを喪失させます。
+
+主な属性:
+- id: カードID
+- targets: 検索範囲
+- number: 枚数。0は全て
+
+XML例:
+<Lose type="Item" id="1" targets="Field" number="0"/>
+

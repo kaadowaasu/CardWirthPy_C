@@ -1,0 +1,8 @@
+CHAREXISTSの基本的な使い方
+
+指定したキャラクター番号のキャラクターが存在するかを判定します。存在すればTRUE、存在しなければFALSEを返します。
+
+使用例:
+例1: CHAREXISTS(SELECTED()) = TRUE
+例2: CHAREXISTS(LATESTUSECARDOWNER()) = TRUE
+例3: CHAREXISTS(0) = FALSE

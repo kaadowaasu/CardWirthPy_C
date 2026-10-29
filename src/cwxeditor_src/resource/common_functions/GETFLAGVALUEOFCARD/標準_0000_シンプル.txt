@@ -1,0 +1,8 @@
+GETFLAGVALUEOFCARDの基本的な使い方
+
+使用例:
+例1: GETFLAGVALUEOFCARD(SELECTEDCARD(), "使用済み")
+例2: GETFLAGVALUEOFCARD(CARDINFO(1, 2), "強化済み") = TRUE
+例3: GETFLAGVALUEOFCARD(1, "フラグA") -> エラー
+
+指定カードが持つフラグの現在値を返します。返り値はカードの状態によって変わります。

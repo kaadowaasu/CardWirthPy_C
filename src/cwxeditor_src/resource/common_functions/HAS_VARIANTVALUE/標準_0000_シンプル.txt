@@ -1,0 +1,8 @@
+HAS_VARIANTVALUEの基本的な使い方
+
+使用例:
+例1: HAS_VARIANTVALUE(SELECTEDCARD(), "威力") = TRUE
+例2: HAS_VARIANTVALUE(CARDINFO(1, 2), "説明") = TRUE
+例3: HAS_VARIANTVALUE(FALSE, "変数A") -> エラー
+
+指定カードに指定名のコモン変数が定義されているかを返します。エディタ内の有効な引数ではTRUEを返します。

@@ -1,0 +1,8 @@
+PARSEFLOATの基本的な使い方
+
+使用例:
+例1: PARSEFLOAT("3.14", 0) = 3.14
+例2: PARSEFLOAT("1e2", 0) = 100
+例3: PARSEFLOAT("invalid", "default") = "default"
+
+第1引数を小数として解釈し、変換できない場合は第2引数をそのまま返します。

@@ -1,0 +1,19 @@
+Effectで数値を伴う効果を設定する例
+
+用途:
+damagetypeとvalueで回復量やダメージ量を指定します。
+
+主な属性:
+- damagetype: 値の計算方式
+- value: 効果量
+
+XML例:
+<Effect targetm="Selected" effecttype="None" resisttype="Unfail">
+<Motions>
+<Motion type="Heal" element="All" damagetype="LevelRatio" value="1"/>
+<Motion type="Damage" element="All" damagetype="LevelRatio" value="1"/>
+<Motion type="Poison" element="All" damagetype="LevelRatio" value="1"/>
+</Motions>
+<KeyCodes/>
+</Effect>
+

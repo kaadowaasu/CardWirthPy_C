@@ -1,0 +1,11 @@
+GetCompleteStampの基本的な使い方
+
+用途:
+指定したシナリオの終了印を付与します。
+
+主な属性:
+- scenario: シナリオ名
+
+XML例:
+<Get type="CompleteStamp" scenario="シナリオ名"/>
+

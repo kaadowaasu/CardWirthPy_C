@@ -1,0 +1,8 @@
+CARDRARITYの基本的な使い方
+
+使用例:
+例1: CARDRARITY(SELECTEDCARD())
+例2: CARDRARITY(CARDINFO(1, 2)) = PREMIER
+例3: CARDRARITY(TRUE) -> エラー
+
+指定カードの希少度を返します。希少度の比較にはRAREやPREMIERを使用できます。

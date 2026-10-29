@@ -1,0 +1,8 @@
+IS_STRの基本的な使い方
+
+使用例:
+例1: IS_STR("文字列") = TRUE
+例2: IS_STR(42) = FALSE
+例3: IS_STR(LIST("A")) = FALSE
+
+引数の値が文字列型ならTRUE、それ以外ならFALSEを返します。

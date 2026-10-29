@@ -1,0 +1,8 @@
+GETRANDOMLISTの基本的な使い方
+
+使用例:
+例1: GETRANDOMLIST(1, 10, 3)
+例2: GETRANDOMLIST(5, 5, 1) = LIST(5)
+例3: GETRANDOMLIST(10, 1, 2) -> エラー
+
+開始値から終了値までの整数から、重複しない値を指定個数だけランダムに返します。

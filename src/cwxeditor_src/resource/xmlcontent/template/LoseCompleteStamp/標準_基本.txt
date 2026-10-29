@@ -1,0 +1,11 @@
+LoseCompleteStampの基本的な使い方
+
+用途:
+指定したシナリオの終了印を削除します。
+
+主な属性:
+- scenario: シナリオ名
+
+XML例:
+<Lose type="CompleteStamp" scenario="シナリオ名"/>
+

@@ -1,0 +1,8 @@
+GETVARIANTVALUEOFCARDの基本的な使い方
+
+使用例:
+例1: GETVARIANTVALUEOFCARD(SELECTEDCARD(), "威力")
+例2: GETVARIANTVALUEOFCARD(CARDINFO(1, 2), "説明")
+例3: GETVARIANTVALUEOFCARD(TRUE, "変数A") -> エラー
+
+指定カードが持つコモン変数の現在値を返します。返り値の型と内容はカードの状態によって変わります。

@@ -1,0 +1,12 @@
+GetCastの基本的な使い方
+
+用途:
+指定したキャストを加入させます。
+
+主な属性:
+- id: キャストID
+- startaction: 戦闘中の行動開始時期
+
+XML例:
+<Get type="Cast" id="1" startaction="NextRound"/>
+

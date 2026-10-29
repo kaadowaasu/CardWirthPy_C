@@ -1,0 +1,8 @@
+PARTYNUMBERの基本的な使い方
+
+使用例:
+例1: PARTYNUMBER()
+例2: PARTYNUMBER() >= 1
+例3: PARTYNUMBER() = 6
+
+現在のパーティ人数を返します。返り値はパーティの状態によって変わります。

@@ -1,0 +1,816 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#171924">
+  <meta name="cardwirth-wasm-manifest" content="">
+  <meta name="cardwirth-font-manifest" content="lib/font-manifest.json">
+  <title>CardWirthPy_C</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%23171924'/%3E%3Cpath d='M17 14h30v8H25v20h22v8H17z' fill='%23f1d27a'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <main id="shell">
+    <canvas id="canvas" tabindex="0" draggable="false" aria-label="CardWirthPy_C"></canvas>
+    <section id="launch" role="status" aria-live="polite">
+      <h1>CardWirthPy_C</h1>
+      <p id="status">起動準備中です。</p>
+      <div class="documentation-buttons">
+        <button id="readme-button" type="button">ReadMe</button>
+        <button id="license-button" type="button">Lisence</button>
+      </div>
+      <fieldset id="storage-panel">
+        <legend>ユーザデータの保存方法</legend>
+        <label class="storage-option">
+          <input id="storage-indexeddb" type="radio" name="storage-mode" value="indexeddb" checked>
+          <span><strong>IndexedDB</strong><small>標準。取り込んだユーザデータをブラウザ内へ保存します。</small></span>
+        </label>
+        <div class="storage-actions">
+          <button id="install-basic" type="button">基本データ</button>
+          <button id="install-scenarios" type="button">追加シナリオ</button>
+          <button id="install-faces" type="button">追加顔絵</button>
+          <button id="install-wasm" type="button">Py_Cプログラムとフォントをインストール</button>
+          <button id="delete-indexeddb" class="danger" type="button">IndexedDBを全削除</button>
+          <button id="reset-browser-state" class="danger" type="button">IndexedDB以外を初期化</button>
+        </div>
+        <p id="storage-status">保存領域を確認しています。</p>
+      </fieldset>
+      <button id="start" type="button" disabled>開始</button>
+      <pre id="log"></pre>
+    </section>
+    <dialog id="readme-dialog" aria-labelledby="readme-dialog-title">
+      <div class="readme-dialog-panel">
+        <header class="readme-dialog-header">
+          <h2 id="readme-dialog-title">ReadMe</h2>
+          <button id="readme-close" type="button">閉じる</button>
+        </header>
+        <article id="readme-content" aria-label="README本文" aria-live="polite">READMEを読み込んでいます。</article>
+      </div>
+    </dialog>
+  </main>
+  <script src="lib/vendor/jszip.min.js?v=3.10.1" charset="utf-8"></script>
+  <script src="web_storage.js?v=20260912-storage-v7" charset="utf-8"></script>
+  <script src="web_storage_picker.js?v=20260904-picker-v1" charset="utf-8"></script>
+  <script src="download_packages.js" charset="utf-8"></script>
+  <script src="wasm_parts.js" charset="utf-8"></script>
+  <script src="web_fonts.js?v=20260915-fonts-v1" charset="utf-8"></script>
+  <script data-cardwirth-pthreads="0" data-cardwirth-variant="All" src="CardWirthPy_C_All.js?v=20260904-web-v14" charset="utf-8"></script>
+  <script>
+    (() => {
+      "use strict";
+      const webBuildId = "20260904-web-v14";
+      const launchQuery = new URLSearchParams(location.search);
+      const canvas = document.getElementById("canvas");
+      const launch = document.getElementById("launch");
+      const start = document.getElementById("start");
+      const status = document.getElementById("status");
+      const log = document.getElementById("log");
+      const readmeButton = document.getElementById("readme-button");
+      const licenseButton = document.getElementById("license-button");
+      const readmeDialog = document.getElementById("readme-dialog");
+      const readmeClose = document.getElementById("readme-close");
+      const readmeContent = document.getElementById("readme-content");
+      const indexedDbMode = document.getElementById("storage-indexeddb");
+      const deleteIndexedDb = document.getElementById("delete-indexeddb");
+      const resetBrowserState = document.getElementById("reset-browser-state");
+      const installWasm = document.getElementById("install-wasm");
+      const storageStatus = document.getElementById("storage-status");
+      const wasmManifestPath = document.querySelector('meta[name="cardwirth-wasm-manifest"]').content;
+      const fontManifestPath = document.querySelector('meta[name="cardwirth-font-manifest"]').content;
+      const webStorage = globalThis.CardWirthWebStorage;
+      const pthreadScript = document.querySelector("script[data-cardwirth-pthreads]");
+      const webPthreadsEnabled = pthreadScript &&
+        pthreadScript.dataset.cardwirthPthreads === "1";
+      const webVariant = pthreadScript?.dataset.cardwirthVariant || "All";
+      document.documentElement.dataset.cardwirthVariant = webVariant;
+      const canvasAspect = webVariant === "Engine" ? 632 / 453 : 159 / 91;
+      document.documentElement.style.setProperty("--cardwirth-canvas-aspect", String(canvasAspect));
+      let storageBusy = false;
+      let started = false;
+      let moduleInstance;
+      let storageControlsReady = false;
+      let storageAccessReady = true;
+      // ローカル開発ビルドは、生成ラッパーの横にある分割前のwasm
+      // を読み込む。配布版はマニフェストを持ち、Py_Cプロ
+      // グラムをキャッシュしてから開始ボタンを有効にする。
+      let wasmInstalled = false;
+      let fontInstalled = false;
+      let runtimeLockRelease = null;
+      let runtimeLockRequest = null;
+      let warnedMissingRuntimeLock = false;
+      const documentCache = new Map();
+      let documentRequest = 0;
+      const escapeReadmeHtml = (value) => String(value).replace(/[&<>"']/g, (character) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;"
+      }[character]));
+      const readmeHref = (value) => {
+        const href = String(value).trim();
+        return /^(?:https?:|mailto:)/i.test(href) ? href : "";
+      };
+      const renderReadmeInline = (value) => {
+        const source = String(value);
+        const tokenPattern = /`([^`\n]+)`|\[([^\]\n]+)\]\(([^)\s]+)(?:\s+["'][^)]*["'])?\)|\*\*([^*\n]+)\*\*|__([^_\n]+)__|~~([^~\n]+)~~|\*([^*\n]+)\*/g;
+        let html = "";
+        let lastIndex = 0;
+        for (const match of source.matchAll(tokenPattern)) {
+          html += escapeReadmeHtml(source.slice(lastIndex, match.index));
+          if (match[1] !== undefined) {
+            html += `<code>${escapeReadmeHtml(match[1])}</code>`;
+          } else if (match[2] !== undefined) {
+            const href = readmeHref(match[3]);
+            html += href ? `<a href='${escapeReadmeHtml(href)}' target='_blank' rel='noopener noreferrer'>${escapeReadmeHtml(match[2])}</a>` : escapeReadmeHtml(match[2]);
+          } else if (match[4] !== undefined) {
+            html += `<strong>${escapeReadmeHtml(match[4])}</strong>`;
+          } else if (match[5] !== undefined) {
+            html += `<strong>${escapeReadmeHtml(match[5])}</strong>`;
+          } else if (match[6] !== undefined) {
+            html += `<del>${escapeReadmeHtml(match[6])}</del>`;
+          } else {
+            html += `<em>${escapeReadmeHtml(match[7])}</em>`;
+          }
+          lastIndex = match.index + match[0].length;
+        }
+        return html + escapeReadmeHtml(source.slice(lastIndex));
+      };
+      const renderReadmeLine = (line) => {
+        const hardBreak = / {2,}$/.test(line);
+        const source = hardBreak ? line.replace(/ {2,}$/, "") : line;
+        return renderReadmeInline(source) + (hardBreak ? "<br>" : "");
+      };
+      const renderReadmeMarkdown = (source) => {
+        const lines = String(source).replace(/\r\n?/g, "\n").split("\n");
+        const listMatch = (line) => line.match(/^(\s*)([-+*]|\d+\.)\s+(.*)$/);
+        const listIndent = (match) => match[1].replace(/\t/g, "  ").length;
+        const renderList = (start, baseIndent) => {
+          const first = listMatch(lines[start]);
+          const ordered = /^\d+\.$/.test(first[2]);
+          const tag = ordered ? "ol" : "ul";
+          let html = `<${tag}>`;
+          let index = start;
+          while (index < lines.length) {
+            const current = listMatch(lines[index]);
+            if (!current || listIndent(current) !== baseIndent ||
+                /^\d+\.$/.test(current[2]) !== ordered) break;
+            html += `<li>${renderReadmeInline(current[3])}`;
+            index++;
+            while (index < lines.length) {
+              const next = listMatch(lines[index]);
+              if (next) {
+                const indent = listIndent(next);
+                if (indent > baseIndent) {
+                  const nested = renderList(index, indent);
+                  html += nested.html;
+                  index = nested.index;
+                  continue;
+                }
+                break;
+              }
+              const continuation = lines[index].match(/^\s+/);
+              if (continuation && continuation[0].length > baseIndent && lines[index].trim()) {
+                html += `<br>${renderReadmeLine(lines[index].trim())}`;
+                index++;
+                continue;
+              }
+              break;
+            }
+            html += "</li>";
+          }
+          return {html: html + `</${tag}>`, index};
+        };
+        const isBlockStart = (line) => /^(?:\s*```|\s*#{1,6}\s+|\s*[-+*]\s+|\s*\d+\.\s+|\s*>\s?)/.test(line) ||
+          /^\s*(?:---+|___+|\*\*\*+)\s*$/.test(line);
+        const blocks = [];
+        let index = 0;
+        while (index < lines.length) {
+          const line = lines[index];
+          if (!line.trim()) { index++; continue; }
+          const fence = line.match(/^\s*```\s*([\w-]*)\s*$/);
+          if (fence) {
+            const code = [];
+            index++;
+            while (index < lines.length && !/^\s*```\s*$/.test(lines[index])) code.push(lines[index++]);
+            if (index < lines.length) index++;
+            blocks.push(`<pre><code>${escapeReadmeHtml(code.join("\n"))}</code></pre>`);
+            continue;
+          }
+          const heading = line.match(/^(#{1,6})\s+(.+?)\s*#*\s*$/);
+          if (heading) {
+            const level = heading[1].length;
+            blocks.push(`<h${level}>${renderReadmeInline(heading[2])}</h${level}>`);
+            index++;
+            continue;
+          }
+          if (/^\s*(?:---+|___+|\*\*\*+)\s*$/.test(line)) {
+            blocks.push("<hr>");
+            index++;
+            continue;
+          }
+          const list = listMatch(line);
+          if (list) {
+            const rendered = renderList(index, listIndent(list));
+            blocks.push(rendered.html);
+            index = rendered.index;
+            continue;
+          }
+          if (/^\s*>\s?/.test(line)) {
+            const quote = [];
+            while (index < lines.length && /^\s*>\s?/.test(lines[index]))
+              quote.push(lines[index++].replace(/^\s*>\s?/, ""));
+            blocks.push(`<blockquote><p>${quote.map(renderReadmeLine).join(" ")}</p></blockquote>`);
+            continue;
+          }
+          const paragraph = [];
+          while (index < lines.length && lines[index].trim() && !isBlockStart(lines[index]))
+            paragraph.push(lines[index++]);
+          blocks.push(`<p>${paragraph.map((part, partIndex) => {
+            const rendered = renderReadmeLine(part);
+            return rendered + (!/ {2,}$/.test(part) && partIndex < paragraph.length - 1 ? " " : "");
+          }).join("")}</p>`);
+        }
+        return blocks.join("");
+      };
+      const openDocument = async (filename, title) => {
+        const request = ++documentRequest;
+        document.getElementById("readme-dialog-title").textContent = title;
+        readmeContent.setAttribute("aria-label", title + "本文");
+        if (!readmeDialog.open) readmeDialog.showModal();
+        if (documentCache.has(filename)) {
+          readmeContent.innerHTML = documentCache.get(filename);
+          readmeContent.removeAttribute("aria-busy");
+          readmeContent.scrollTop = 0;
+          return;
+        }
+        readmeContent.textContent = title + "を読み込んでいます。";
+        readmeContent.setAttribute("aria-busy", "true");
+        try {
+          const response = await fetch(new URL("../" + filename, document.baseURI), {
+            cache: "no-store"
+          });
+          if (!response.ok) throw new Error(`${filename}を読み込めませんでした（${response.status}）。`);
+          const html = renderReadmeMarkdown(await response.text());
+          documentCache.set(filename, html);
+          if (request !== documentRequest) return;
+          readmeContent.innerHTML = html;
+          readmeContent.scrollTop = 0;
+        } catch (error) {
+          if (request !== documentRequest) return;
+          readmeContent.textContent = error && error.message ?
+            error.message : filename + "を読み込めませんでした。";
+        } finally {
+          if (request === documentRequest) readmeContent.removeAttribute("aria-busy");
+        }
+      };
+      readmeButton.addEventListener("click", () => { void openDocument("README.md", "ReadMe"); });
+      licenseButton.addEventListener("click", () => { void openDocument("LICENSE.md", "Lisence"); });
+      readmeClose.addEventListener("click", () => readmeDialog.close());
+      readmeDialog.addEventListener("click", (event) => {
+        if (event.target === readmeDialog) readmeDialog.close();
+      });
+      // キャンバスはEngineの入力面。ブラウザーの画像
+      // 保存メニューに置き換えず、SDLへボタン3を渡す。
+      canvas.addEventListener("contextmenu", (event) => event.preventDefault());
+      // The pthread receives SDL shortcuts
+      // 通知は非同期でページ保存の取り消しに間に合わないため、所有スレッドで既定動作だけを取り消す。
+      // 伝播は止めず、Ctrl+SをEditorへ渡す。
+      document.addEventListener("keydown", (event) => {
+        if (!moduleInstance || !event.ctrlKey || event.altKey ||
+            event.isComposing || String(event.key).toLowerCase() !== "s") return;
+        const ime = moduleInstance["sdlIme"];
+        if (event.target !== canvas &&
+            !(ime?.active && event.target === ime.element)) return;
+        event.preventDefault();
+      }, true);
+      // SDLのIMEはALLの3画面で非表示のtextareaを使う。SDLの同
+      // 期Webクリップボードは内部専用なので、Ctrl/Cmd+Vはブラウザーに
+      // 処理させ、外部アプリケーションのテキストをinputイベントで受け取る。
+      document.addEventListener("keydown", (event) => {
+        const ime = moduleInstance?.["sdlIme"];
+        if (!ime?.active || event.target !== ime.element || event.altKey ||
+            !(event.ctrlKey || event.metaKey) || event.isComposing ||
+            String(event.key).toLowerCase() !== "v") return;
+        event.stopImmediatePropagation();
+      }, true);
+      const appendLog = (value, error = false) => {
+        const text = String(value);
+        log.textContent += text + "\n";
+        (error ? console.error : console.log)(text);
+      };
+      globalThis.CardWirthWebStatus = {
+        set(value) { status.textContent = String(value); },
+        log(value) { appendLog(value); },
+        error(value) { appendLog(value, true); status.textContent = "起動に失敗しました。"; }
+      };
+      const setStorageStatus = (value, error = false) => {
+        storageStatus.hidden = false;
+        storageStatus.textContent = String(value);
+        storageStatus.classList.toggle("error", error);
+      };
+      const w1CompatibilityError = () => {
+        if (!webPthreadsEnabled) return "";
+        if (!globalThis.crossOriginIsolated || typeof globalThis.SharedArrayBuffer === "undefined") {
+          return "この配信サーバーではEngineを起動できません。COOP／COEP設定とHTTPS配信を確認してください。";
+        }
+        const concurrency = Number(navigator.hardwareConcurrency);
+        if (!Number.isFinite(concurrency) || concurrency < 2) {
+          return "この端末ではEngine用Web Workerを確保できません（2論理CPU以上が必要です）。";
+        }
+        return "";
+      };
+      const acquireRuntimeLock = async () => {
+        if (runtimeLockRelease) return true;
+        if (!navigator.locks || typeof navigator.locks.request !== "function") {
+          if (!warnedMissingRuntimeLock) {
+            appendLog("このブラウザはWeb Locks API非対応です。同じUserDataを複数タブで開かないでください。", true);
+            warnedMissingRuntimeLock = true;
+          }
+          return true;
+        }
+        return new Promise((resolve, reject) => {
+          let answered = false;
+          runtimeLockRequest = navigator.locks.request(
+            "cardwirthc-userdata-runtime",
+            {mode: "exclusive", ifAvailable: true},
+            (lock) => {
+              if (!lock) {
+                answered = true;
+                resolve(false);
+                return undefined;
+              }
+              answered = true;
+              resolve(true);
+              return new Promise((release) => { runtimeLockRelease = release; });
+            }).catch((error) => {
+              if (!answered) reject(error);
+            });
+        });
+      };
+      const releaseRuntimeLock = () => {
+        if (runtimeLockRelease) runtimeLockRelease();
+        runtimeLockRelease = null;
+        runtimeLockRequest = null;
+      };
+      const updateStartAvailability = () => {
+        const compatibilityError = w1CompatibilityError();
+        start.disabled = storageBusy || started || !storageControlsReady || !storageAccessReady ||
+          !wasmInstalled ||
+          !fontInstalled ||
+          Boolean(compatibilityError);
+        if (compatibilityError) status.textContent = compatibilityError;
+        else if (!wasmInstalled)
+          status.textContent = "Py_Cプログラムをインストールしてください。";
+        else if (!fontInstalled)
+          status.textContent = "フォントをインストールしてください。";
+        else if (!storageAccessReady)
+          status.textContent = "基本データを確認してください。";
+        else if (!start.disabled) status.textContent = "開始できます。";
+        if (!start.disabled && launchQuery.get("autostart") === "1")
+          queueMicrotask(() => { if (!start.disabled) start.click(); });
+      };
+      const initializeStorageControls = async () => {
+        if (!webStorage) throw new Error("web_storage.jsを読み込めませんでした。");
+        // この配布版ではIndexedDBだけを公開し、既存のフォルダーハンドルは保持する。
+        await webStorage.initialize();
+        await webStorage.setStorageMode("indexeddb");
+        const summary = await webStorage.initialize();
+        indexedDbMode.checked = true;
+        if (!wasmManifestPath) {
+          // 開発ビルドには分割マニフェストがなく、生成ラ
+          // ッパーがローカルのwasmを直接読み込む。
+          wasmInstalled = true;
+          fontInstalled = true;
+        } else if (!globalThis.CardWirthWasmParts ||
+                   typeof globalThis.CardWirthWasmParts.isInstalled !== "function") {
+          throw new Error("Py_Cプログラムのインストール機能を読み込めませんでした。");
+        } else {
+          wasmInstalled = await globalThis.CardWirthWasmParts.isInstalled(
+            new URL(wasmManifestPath, document.baseURI).href);
+          if (!globalThis.CardWirthWebFonts ||
+              typeof globalThis.CardWirthWebFonts.isInstalled !== "function")
+            throw new Error("Webフォントのインストール機能を読み込めませんでした。");
+          fontInstalled = await globalThis.CardWirthWebFonts.isInstalled(fontManifestPath);
+        }
+        if (!summary.userDataComplete) {
+          storageAccessReady = false;
+          setStorageStatus(
+            `IndexedDBのUserDataが不完全です（一覧 ${summary.userFiles} / 本体 ${summary.userPayloads}）。` +
+            "基本データをもう一度取り込んでください。", true);
+        } else if (summary.pendingUploads) {
+          setStorageStatus(`${summary.pendingUploads}ファイルを次回起動時に取り込みます。`);
+        } else if (summary.userFiles) {
+          storageStatus.hidden = true;
+        } else {
+          storageAccessReady = true;
+          setStorageStatus("基本データボタンからIndexedDBへダウンロードできます。");
+        }
+        storageControlsReady = true;
+        updateStartAvailability();
+      };
+
+      indexedDbMode.addEventListener("change", async () => {
+        if (!indexedDbMode.checked) return;
+        await webStorage.setStorageMode("indexeddb");
+        storageAccessReady = true;
+        setStorageStatus("IndexedDBを使用します。");
+        updateStartAvailability();
+      });
+      const packageTools = globalThis.CardWirthDownloadPackages;
+      const storageButtons = ["install-basic","install-scenarios","install-faces","install-wasm","delete-indexeddb","reset-browser-state"].map(id => document.getElementById(id));
+      const storageAction = async action => {
+        if (started || storageBusy || !storageControlsReady) return;
+        storageBusy = true;
+        storageButtons.forEach(button => { button.disabled = true; });
+        updateStartAvailability();
+        try {
+          if (!navigator.locks) throw new Error("安全なデータ更新にはWeb Locks APIが必要です。");
+          if (!(await acquireRuntimeLock())) throw new Error("別タブで起動中です。先に閉じてください。");
+          await action();
+        } catch (error) { setStorageStatus(error.message || error, true); }
+        finally {
+          releaseRuntimeLock();
+          storageBusy = false;
+          storageButtons.forEach(button => { button.disabled = false; });
+          updateStartAvailability();
+        }
+      };
+      for (const [id, group] of [["install-basic","basic"],["install-scenarios","scenarios"],["install-faces","faces"]]) {
+        document.getElementById(id).addEventListener("click", () => storageAction(async () => {
+          if (group === "basic") {
+            const stats = await webStorage.getRuntimeStats();
+            if (stats.some(row => ["data", "scenario", "yado", "system"].some(folder => String(row.path).toLowerCase() === `/user/${folder}` || String(row.path).toLowerCase().startsWith(`/user/${folder}/`))) &&
+                !packageTools.confirmBasic(message => prompt(message))) return;
+          }
+          const count = await packageTools.install(group,
+            new URL("../DownloadFiles/", document.baseURI).href, webStorage, setStorageStatus);
+          storageAccessReady = (await webStorage.initialize()).userDataComplete;
+          setStorageStatus(count + "ファイルを保存しました。既存の他のファイルは保持しています。");
+        }));
+      }
+      installWasm.addEventListener("click", () => storageAction(async () => {
+        if (!wasmManifestPath) throw new Error("Py_Cプログラムの配布情報が見つかりません。");
+        if (!globalThis.CardWirthWasmParts || typeof globalThis.CardWirthWasmParts.install !== "function")
+          throw new Error("Py_Cプログラムのインストール機能を読み込めませんでした。");
+        if (navigator.storage && navigator.storage.persist) await navigator.storage.persist();
+        const result = await globalThis.CardWirthWasmParts.install(
+          new URL(wasmManifestPath, document.baseURI).href,
+          (done, total) => setStorageStatus(`Py_Cプログラムをインストールしています。 ${done}/${total}`));
+        if (!globalThis.CardWirthWebFonts || typeof globalThis.CardWirthWebFonts.install !== "function")
+          throw new Error("Webフォントのインストール機能を読み込めませんでした。");
+        const fontResult = await globalThis.CardWirthWebFonts.install(
+          fontManifestPath,
+          (done, total, item, skipped) => setStorageStatus(
+            `フォントをインストールしています。 ${done}/${total} ${skipped ? "（保存済み）" : ""}`));
+        wasmInstalled = true;
+        fontInstalled = true;
+        setStorageStatus(
+          `Py_Cプログラム（${result.parts}分割）とフォントをIndexedDBへ保存しました。` +
+          `フォント新規${fontResult.installed}件、保存済み${fontResult.skipped}件。次回から再利用します。`);
+        updateStartAvailability();
+      }));
+      globalThis.CardWirthInstallAdditionalPackage = async (group, progressCallback) => {
+        if (!["basic", "scenarios", "faces"].includes(group))
+          throw new Error("追加データの種類が不正です。");
+        if (!started || !moduleInstance)
+          throw new Error("ALL HOMEの起動後に実行してください。");
+        if (storageBusy) throw new Error("別の保存処理を実行中です。");
+        storageBusy = true;
+        storageButtons.forEach(button => { button.disabled = true; });
+        try {
+          if (!packageTools || typeof packageTools.install !== "function")
+            throw new Error("追加データのインストール機能を読み込めませんでした。");
+          const report = text => {
+            setStorageStatus(text);
+            if (typeof progressCallback === "function")
+              progressCallback(String(text || ""));
+          };
+          if (typeof moduleInstance.cardwirthFlushUserStorage !== "function" ||
+              typeof moduleInstance.cardwirthRefreshInstalledFiles !== "function")
+            throw new Error("インストール後にファイル一覧を更新する機能がありません。");
+          // インストーラーがデータベースの行を置き換える前に、実行中の保存待ちを完了する。
+          await moduleInstance.cardwirthFlushUserStorage();
+          const count = await packageTools.install(
+            group, new URL("../DownloadFiles/", document.baseURI).href,
+            webStorage, report, paths => moduleInstance.cardwirthRefreshInstalledFiles(paths));
+          storageAccessReady = (await webStorage.initialize()).userDataComplete;
+          setStorageStatus(count + "ファイルを保存しました。既存の他のファイルは保持しています。");
+          return count;
+        } finally {
+          storageBusy = false;
+          storageButtons.forEach(button => { button.disabled = false; });
+          updateStartAvailability();
+        }
+      };
+      globalThis.CardWirthOpenUserDataImport = () => {
+        alert("データの追加は、ALL HOMEの「その他」から行えます。");
+      };
+      deleteIndexedDb.addEventListener("click", () => storageAction(async () => {
+        if (!packageTools.confirmDelete(message => prompt(message))) return;
+        if (wasmManifestPath) {
+          if (!globalThis.CardWirthWasmParts ||
+              typeof globalThis.CardWirthWasmParts.uninstall !== "function")
+            throw new Error("Py_Cプログラムの削除機能を読み込めませんでした。");
+          await globalThis.CardWirthWasmParts.uninstall();
+        }
+        await webStorage.deleteAllIndexedDb();
+        location.reload();
+      }));
+      resetBrowserState.addEventListener("click", () => storageAction(async () => {
+        if (!confirm("IndexedDB以外のブラウザ保存データを初期化します。IndexedDBのユーザーデータは残ります。実行しますか？")) return;
+        globalThis.localStorage?.clear();
+        globalThis.sessionStorage?.clear();
+        if (globalThis.caches) {
+          for (const name of await globalThis.caches.keys())
+            await globalThis.caches.delete(name);
+        }
+        if (globalThis.navigator?.serviceWorker) {
+          for (const registration of await globalThis.navigator.serviceWorker.getRegistrations())
+            await registration.unregister();
+        }
+        location.reload();
+      }));
+
+      // 通常の入力でブラウザーの音声を有効化する。追加の音声設定では
+      // なく、再生と音量はEngine・Editorの設定に従う。
+      const unlockAudio = () => {
+        // MIDIはwasm内のTinySoundFontで合成し、同じSDL音
+        // 声デバイスから再生するため、SDL音声の再開でMIDIも有効になる。
+        const attempts = [];
+        if (moduleInstance && typeof moduleInstance.cardwirthResumeAudio === "function")
+          attempts.push(Promise.resolve(moduleInstance.cardwirthResumeAudio()));
+        const boundedAttempts = attempts.map((attempt) => Promise.race([
+          Promise.resolve(attempt),
+          new Promise((resolve) => setTimeout(() => resolve(false), 1500))
+        ]));
+        return Promise.allSettled(boundedAttempts).then((results) =>
+          results.length > 0 && results.every((result) =>
+            result.status === "fulfilled" && result.value !== false));
+      };
+      // 前の再開待ち処理は再利用しない。信頼された操作ごとに、ブラウザーの
+      // 操作有効期間内でAudioContext.resume()を呼ぶ。
+      document.addEventListener("pointerdown", () => { void unlockAudio(); },
+        {capture: true, passive: true});
+      document.addEventListener("keydown", () => { void unlockAudio(); },
+        {capture: true});
+
+      // ゲーム画面の押下やドラッグを、Safariの文
+      // 書選択、長押しメニュー、独自の拡大縮小操作に変
+      // えさせない。Webの外枠で処理し、元のポインタ
+      // ー・タッチイベントはSDLキャンバスへ渡す。
+      const preventBrowserGesture = (event) => { event.preventDefault(); };
+      for (const eventName of ["selectstart", "contextmenu", "dragstart",
+        "gesturestart", "gesturechange", "gestureend"]) {
+        document.addEventListener(eventName, preventBrowserGesture,
+          {capture: true, passive: false});
+      }
+      document.addEventListener("selectionchange", () => {
+        // 古いWebKitはselectstartを取り消して
+        // も、選択範囲を1フレーム保持する場合がある。範囲を除
+        // 去し、画面や要素の青い選択表示が一瞬見えるのを防ぐ。
+        const selection = globalThis.getSelection?.();
+        if (selection && !selection.isCollapsed) selection.removeAllRanges();
+      }, {capture: true});
+      document.addEventListener("touchmove", (event) => {
+        // Safariはジェスチャーイベントの配送前にスクロールや選択
+        // を始めることがある。従来のWebCardWirthと同様、ゲ
+        // ーム面の既定動作は取り消し、HTMLのReadMeと通常のフ
+        // ォームでは1本指のスクロールを残す。preventDefault
+        // は伝播を止めないので、元のタッチ移動はSDLへ届く。
+        const element = event.target instanceof Element ? event.target : null;
+        const allowSingleTouch = element?.closest(
+          "#readme-content, input, textarea, select");
+        if (!allowSingleTouch || !event.touches || event.touches.length > 1)
+          event.preventDefault();
+      }, {capture: true, passive: false});
+
+      const resizeCanvas = () => {
+        // 起動後の描画バッファーのサイズはSDLが管理する。ここでwidth
+        // やheightを変えると、SDL側の世代更新なしでバッファーが消
+        // え、ポインター座標もずれる。CSSによる要素サイズの調整は可能。
+        if (started || storageBusy) return;
+        const ratio = Math.max(1, window.devicePixelRatio || 1);
+        const width = Math.max(1, Math.round(canvas.clientWidth * ratio));
+        const height = Math.max(1, Math.round(canvas.clientHeight * ratio));
+        if (canvas.width !== width) canvas.width = width;
+        if (canvas.height !== height) canvas.height = height;
+      };
+      let sdlResizeNotificationPending = false;
+      const requestSdlResizeNotification = () => {
+        if (!started || sdlResizeNotificationPending) return;
+        sdlResizeNotificationPending = true;
+        const dispatch = () => {
+          sdlResizeNotificationPending = false;
+          if (started) window.dispatchEvent(new Event("resize"));
+        };
+        if (typeof window.requestAnimationFrame === "function")
+          window.requestAnimationFrame(dispatch);
+        else
+          window.setTimeout(dispatch, 0);
+      };
+      let visualViewportCommitTimer = 0;
+      let orientationViewportCheckTimer = 0;
+      let pendingVisualViewport = null;
+      let committedVisualViewport = null;
+      const readVisualViewport = () => {
+        const viewport = window.visualViewport;
+        // Safariのツールバーアニメーション中は小数の測定値が揺れ続け
+        // る場合がある。更新をまとめる前にSDLと同じ整数のCSS寸法へ揃
+        // える。非表示や遷移中の表示領域で、稼働中のキャンバスを縮めない。
+        const dimension = (value, fallback) => Math.max(1, Math.round(
+          Number.isFinite(value) && value > 0 ? value : fallback));
+        return {
+          width: dimension(viewport ? viewport.width : window.innerWidth,
+            committedVisualViewport?.width || window.innerWidth || 1),
+          height: dimension(viewport ? viewport.height : window.innerHeight,
+            committedVisualViewport?.height || window.innerHeight || 1),
+          left: Math.max(0, Math.round(viewport?.offsetLeft || 0)),
+          top: Math.max(0, Math.round(viewport?.offsetTop || 0)),
+          pixelRatio: Math.max(1, window.devicePixelRatio || 1),
+        };
+      };
+      const sameVisualViewport = (a, b) => a && b &&
+        a.width === b.width && a.height === b.height &&
+        a.left === b.left && a.top === b.top && a.pixelRatio === b.pixelRatio;
+      const commitVisualViewport = () => {
+        visualViewportCommitTimer = 0;
+        // Safariは表示領域の寸法が変わる前にorientationchange
+        // を通知し、その後resizeを送らない場合がある
+        // 。早い通知時点の値ではなく、現在の寸法を読む。
+        const next = pendingVisualViewport ? readVisualViewport() : null;
+        pendingVisualViewport = null;
+        if (!next || sameVisualViewport(next, committedVisualViewport)) return;
+        const rootStyle = document.documentElement.style;
+        rootStyle.setProperty("--visual-viewport-width", `${next.width}px`);
+        rootStyle.setProperty("--visual-viewport-height", `${next.height}px`);
+        rootStyle.setProperty("--visual-viewport-left", `${next.left}px`);
+        rootStyle.setProperty("--visual-viewport-top", `${next.top}px`);
+        if (webVariant === "All") {
+          // SDLの描画面とCSS要素は一括して変更する。回転中のvisualViewport
+          // の中間値を個別適用すると消去と再描画を繰り返し、Safari
+          // やAndroid WebViewでちらつく。
+          // 値が落ち着いた最後の測定値だけを適用する。
+          canvas.style.width = `${next.width}px`;
+          canvas.style.height = `${next.height}px`;
+          canvas.style.aspectRatio = "auto";
+        }
+        committedVisualViewport = next;
+        resizeCanvas();
+        requestSdlResizeNotification();
+      };
+      const scheduleVisualViewportCommit = (delay = 220) => {
+        if (visualViewportCommitTimer) window.clearTimeout(visualViewportCommitTimer);
+        visualViewportCommitTimer = window.setTimeout(commitVisualViewport, delay);
+      };
+      const updateVisualViewport = () => {
+        const next = readVisualViewport();
+        if (sameVisualViewport(next, committedVisualViewport)) return;
+        if (sameVisualViewport(next, pendingVisualViewport)) return;
+        pendingVisualViewport = next;
+        if (webVariant === "All" && started) {
+          scheduleVisualViewportCommit();
+          return;
+        }
+        commitVisualViewport();
+      };
+      const settleVisualViewport = () => {
+        // モバイルブラウザーは回転中に複数の中間寸法を通知する
+        // 。CSSキャンバスとSDLのサイズ変更をまとめ、回
+        // 転が終わった後の安定した1フレームだけを表示する。
+        updateVisualViewport();
+        if (webVariant === "All" && started) scheduleVisualViewportCommit(260);
+        // iOS/PWAの回転は最初の静止期間後に確定し、最後のvisualViewport
+        // イベントを省く場合がある。回数を限った追加確認で最終寸法を
+        // 読み、変化がなければSDLのサイズ変更や再描画は行わない。
+        if (orientationViewportCheckTimer) window.clearTimeout(orientationViewportCheckTimer);
+        orientationViewportCheckTimer = window.setTimeout(() => {
+          orientationViewportCheckTimer = 0;
+          updateVisualViewport();
+        }, 750);
+      };
+      window.addEventListener("resize", updateVisualViewport, {passive: true});
+      window.addEventListener("orientationchange", settleVisualViewport, {passive: true});
+      window.screen?.orientation?.addEventListener("change", settleVisualViewport, {passive: true});
+      window.addEventListener("pageshow", settleVisualViewport, {passive: true});
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") settleVisualViewport();
+      }, {passive: true});
+      // 回転中のPWA復帰など、iOSが最後のイベントをすべて省く
+      // 場合に備え、表示中はイベントとは独立した軽量な寸法確認を続
+      // ける。値が同じならサイズ変更やキャンバス消去を行わない。
+      window.setInterval(() => {
+        if (started && document.visibilityState !== "hidden") updateVisualViewport();
+      }, 1000);
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", updateVisualViewport, {passive: true});
+        window.visualViewport.addEventListener("scroll", updateVisualViewport, {passive: true});
+      }
+      new ResizeObserver(() => {
+        resizeCanvas();
+        // Emscripten/SDLはwindow.resizeを監視する。
+        // visualViewportのサイズ変更だけが通知された場合は、更新
+        // 済みのCSS寸法を次のフレームでSDLの通常のサイズ変更処理へ渡す。
+        requestSdlResizeNotification();
+      }).observe(canvas);
+      updateVisualViewport();
+      start.addEventListener("click", async () => {
+        if (started) return;
+        const compatibilityError = w1CompatibilityError();
+        if (compatibilityError) {
+          status.textContent = compatibilityError;
+          return;
+        }
+        if (!storageAccessReady) {
+          status.textContent = "基本データを確認してください。";
+          return;
+        }
+        if (!wasmInstalled) {
+          status.textContent = "Py_Cプログラムをインストールしてください。";
+          return;
+        }
+        // 開始操作は信頼された利用者操作。非同期WASM起動で操作の有
+        // 効期間が失われる前に、ここでWebAudioの再開を始める。
+        void unlockAudio();
+        started = true;
+        start.disabled = true;
+        status.textContent = "WebAssemblyを読み込んでいます。";
+        try {
+          if (!(await acquireRuntimeLock())) {
+            const lockError = new Error(
+              "同じブラウザの別タブでCardWirthPy_C Webが起動中です。先にそのタブを閉じてください。");
+            lockError.name = "CardWirthRuntimeLockError";
+            throw lockError;
+          }
+          if (navigator.storage && navigator.storage.persist) await navigator.storage.persist();
+          const launchArguments = ["--user-data", "/user"];
+          if (launchQuery.get("engine") === "1")
+            launchArguments.push("--initial-page", "engine");
+          else if (launchQuery.get("editor") === "1")
+            launchArguments.push("--initial-page", "editor");
+          else if (launchQuery.get("explorer") === "1")
+            launchArguments.push("--initial-page", "explorer");
+          if (launchQuery.get("yado"))
+            launchArguments.push("-yado", launchQuery.get("yado"));
+          if (launchQuery.get("dialog"))
+            launchArguments.push("--hosted-test-dialog", launchQuery.get("dialog"));
+          const {failure: wasmFailure, ...wasmOptions} = wasmManifestPath ? await CardWirthWasmParts.prepare(
+            new URL(wasmManifestPath, document.baseURI).href,
+            (done, total) => { status.textContent = `WebAssemblyを読み込んでいます。 ${done}/${total}`; }
+          ) : {failure: new Promise(() => {})};
+          moduleInstance = await Promise.race([createCardWirthModule({
+            ...wasmOptions,
+            cardwirthFontManifestPath: fontManifestPath,
+            cardwirthRequireInstalledFonts: Boolean(wasmManifestPath),
+            canvas,
+            arguments: launchArguments,
+            locateFile: (path) => {
+              const fileName = path.split("/").pop();
+              const runtimePath = /\.(?:wasm|worker\.js)$/.test(fileName)
+                ? `lib/${fileName}` : path;
+              const url = new URL(runtimePath, document.baseURI);
+              url.searchParams.set("v", webBuildId);
+              return url.toString();
+            },
+            print: (value) => appendLog(value),
+            printErr: (value) => appendLog(value, true),
+            onAbort: (value) => globalThis.CardWirthWebStatus.error(value || "WASM aborted")
+          }), wasmFailure]);
+          globalThis.CardWirthModule = moduleInstance;
+          // 非同期起動中のサイズ変更は、SDLのイベント登録前に届く
+          // 場合がある。SDLの準備完了後に現在の寸法を再通知する。
+          committedVisualViewport = null;
+          updateVisualViewport();
+          status.textContent = "起動しました。";
+          launch.hidden = true;
+          canvas.focus();
+          void unlockAudio();
+        } catch (error) {
+          releaseRuntimeLock();
+          started = false;
+          updateStartAvailability();
+          globalThis.CardWirthWebStatus.error(error && error.stack ? error.stack : error);
+          if (error && error.name === "CardWirthRuntimeLockError")
+            status.textContent = error.message;
+        }
+      });
+      const flush = () => {
+        if (moduleInstance && moduleInstance.cardwirthFlushUserStorage)
+          moduleInstance.cardwirthFlushUserStorage().catch((error) => {
+            appendLog(error && (error.stack || error.message) ?
+              (error.stack || error.message) : String(error), true);
+          });
+      };
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "hidden") flush();
+        else void unlockAudio();
+      });
+      window.addEventListener("pagehide", flush);
+      initializeStorageControls().catch((error) => {
+        setStorageStatus(error && error.message ? error.message : error, true);
+      });
+    })();
+  </script>
+</body>
+</html>

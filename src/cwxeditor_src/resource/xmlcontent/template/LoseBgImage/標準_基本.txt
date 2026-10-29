@@ -1,0 +1,13 @@
+LoseBgImageの基本的な使い方
+
+用途:
+名前に一致する背景セルを削除します。
+
+主な属性:
+- cellname: セル名
+- regex: 正規表現を使うか
+- doanime: JPYアニメーションを実行するか
+
+XML例:
+<Lose type="BgImage" transition="Default" transitionspeed="5" cellname="テンプレート" doanime="False"/>
+

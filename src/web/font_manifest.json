@@ -1,0 +1,41 @@
+{
+  "format": 1,
+  "files": [
+    {
+      "file": "fonts/NotoSansCJKjp-Regular.otf",
+      "target": "/program/NotoSansCJKjp-Regular.otf",
+      "size": 16467736,
+      "sha256": "68a3fc98800b2a27b371f2fb79991daf3633bd89309d4ffaa6946fd587f375b5"
+    },
+    {
+      "file": "fonts/IPA/gothic.ttf",
+      "target": "/program/Font/gothic.ttf",
+      "size": 6235344,
+      "sha256": "503af4a8b84d1079b8e2e358dc7f7a7fb8cb7a1f212f35eaef6782dbfc75a55e"
+    },
+    {
+      "file": "fonts/IPA/mincho.ttf",
+      "target": "/program/Font/mincho.ttf",
+      "size": 8046712,
+      "sha256": "ab923870b9ea047179c14fa78eede8d3957b6bfed26577253b5f08f75c102a34"
+    },
+    {
+      "file": "fonts/IPA/pgothic.ttf",
+      "target": "/program/Font/pgothic.ttf",
+      "size": 6235712,
+      "sha256": "a63f6153841e56ec9df1b31a54d98d3f41d8aaa1c3d8df30a33502296f5b8068"
+    },
+    {
+      "file": "fonts/IPA/pmincho.ttf",
+      "target": "/program/Font/pmincho.ttf",
+      "size": 8046048,
+      "sha256": "75c2fd0b6f3f2b2c56a95b7ac2236034a04e0b83605ffb6d149b6dcbbcfb06fb"
+    },
+    {
+      "file": "fonts/IPA/uigothic.ttf",
+      "target": "/program/Font/uigothic.ttf",
+      "size": 4940836,
+      "sha256": "2a0196cd6deec16f8827c1d65b91c28c745b18381169881f1a06dc0f32aae4b1"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+CASTNAMEの基本的な使い方
+
+使用例:
+例1: CASTNAME(SELECTED())
+例2: CASTNAME(1) = "冒険者"
+例3: CASTNAME(LIST(1)) -> エラー
+
+指定番号のキャラクターの名称を返します。返り値は対象によって変わります。

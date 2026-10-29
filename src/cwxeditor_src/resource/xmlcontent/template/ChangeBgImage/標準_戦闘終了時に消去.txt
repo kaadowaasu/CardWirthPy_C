@@ -1,0 +1,21 @@
+ChangeBgImageで戦闘終了時に消去する背景を設定する例
+
+用途:
+BgImageのbattleをTrueにすると、配置したセルは戦闘終了時に消去されます。
+
+主な属性:
+- battle: 戦闘終了時に消去するか
+- cellname: セル名
+
+XML例:
+<Change type="BgImage" transition="Default" transitionspeed="5">
+<BgImages>
+<BgImage smoothing="Default" mask="True" cellname="戦闘用セル" battle="True">
+<ImagePath>Bill.png</ImagePath>
+<Location left="400" top="26"/>
+<Size width="200" height="185"/>
+<Layer>500</Layer>
+</BgImage>
+</BgImages>
+</Change>
+

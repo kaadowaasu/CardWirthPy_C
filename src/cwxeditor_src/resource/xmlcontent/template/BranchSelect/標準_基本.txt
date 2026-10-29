@@ -1,0 +1,18 @@
+BranchSelectの基本的な使い方
+
+用途:
+条件に従ってメンバを選択し、成否で分岐します。
+
+主な属性:
+- targetall: 全メンバを候補にするか
+- method: 選択方式
+- initialValue: 評価の初期値
+
+XML例:
+<Branch type="Select" targetall="True" initialValue="-2" method="Valued">
+<Coupons>
+<Coupon value="1">＿子供</Coupon>
+<Coupon value="1">＿♀</Coupon>
+</Coupons>
+</Branch>
+

@@ -1,0 +1,12 @@
+BranchLevelの基本的な使い方
+
+用途:
+パーティまたは選択メンバのレベルで分岐します。
+
+主な属性:
+- average: パーティ平均を使うか
+- value: 基準レベル
+
+XML例:
+<Branch type="Level" average="True" value="5"/>
+

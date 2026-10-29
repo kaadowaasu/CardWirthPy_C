@@ -1,0 +1,13 @@
+SetVariantStrの基本的な使い方
+
+用途:
+文字列変数へ本文の文字列を設定します。
+
+主な属性:
+- variant: 変数名
+- insert: 既存文字列の末尾へ追加するか
+- trim: 前後の空白と改行を除去するか
+
+XML例:
+<Set type="VariantStr" variant="コモン\汎用1" insert="False"><![CDATA[設定する文字列]]></Set>
+

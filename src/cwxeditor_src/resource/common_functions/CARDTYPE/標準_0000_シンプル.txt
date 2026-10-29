@@ -1,0 +1,8 @@
+CARDTYPEの基本的な使い方
+
+使用例:
+例1: CARDTYPE(SELECTEDCARD())
+例2: CARDTYPE(CARDINFO(1, 2)) = SKILL
+例3: CARDTYPE("ITEM") -> エラー
+
+指定カードの種類を返します。種類の比較にはSKILL、ITEM、BEASTなどを使用します。

@@ -1,0 +1,13 @@
+BranchItemの基本的な使い方
+
+用途:
+指定したアイテムカードの所持状況で分岐します。
+
+主な属性:
+- id: アイテムカードID
+- targets: 検索範囲
+- number: 必要枚数
+
+XML例:
+<Branch type="Item" id="1" targets="Field" number="1"/>
+

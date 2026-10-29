@@ -1,0 +1,8 @@
+CARDPRICEの基本的な使い方
+
+使用例:
+例1: CARDPRICE(SELECTEDCARD())
+例2: CARDPRICE(CARDINFO(1, 2)) >= 1000
+例3: CARDPRICE("SkillCard") -> エラー
+
+指定カードの価格を返します。返り値はカードによって変わります。

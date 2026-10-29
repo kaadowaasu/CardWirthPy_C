@@ -1,0 +1,8 @@
+SELECTEDの基本的な使い方
+
+使用例:
+例1: SELECTED()
+例2: CASTNAME(SELECTED())
+例3: LIFERATIO(SELECTED()) < 0.5
+
+現在選択されているキャラクターの番号を返します。返り値は選択状態によって変わります。

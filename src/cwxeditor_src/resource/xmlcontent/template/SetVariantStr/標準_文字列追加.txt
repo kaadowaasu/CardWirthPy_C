@@ -1,0 +1,12 @@
+SetVariantStrで既存文字列へ追加する例
+
+用途:
+insertをTrueにすると、本文を変数の現在値の末尾へ追加します。
+
+主な属性:
+- variant: 代入先変数
+- insert: Trueを指定
+
+XML例:
+<Set type="VariantStr" variant="コモン\汎用1" insert="True">追加する文字列</Set>
+

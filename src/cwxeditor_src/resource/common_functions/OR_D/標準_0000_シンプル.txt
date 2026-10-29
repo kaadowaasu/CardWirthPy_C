@@ -1,0 +1,8 @@
+OR_Dの基本的な使い方
+
+使用例:
+例1: OR_D(FALSE, FALSE, TRUE) = TRUE
+例2: OR_D(FALSE, 3 > 5) = FALSE
+例3: OR_D(TRUE, 1 / 0 = 0) = TRUE
+
+左から順に評価し、最初のTRUEで評価を打ち切ります。例3の除算は評価されません。

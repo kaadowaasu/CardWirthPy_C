@@ -1,0 +1,8 @@
+CARDMAXUSELIMITの基本的な使い方
+
+使用例:
+例1: CARDMAXUSELIMIT(SELECTEDCARD())
+例2: CARDMAXUSELIMIT(CARDINFO(1, 2))
+例3: CARDMAXUSELIMIT(LIST(1, 2)) -> エラー
+
+指定カードの最大使用回数を返します。引数にはカード情報を指定します。

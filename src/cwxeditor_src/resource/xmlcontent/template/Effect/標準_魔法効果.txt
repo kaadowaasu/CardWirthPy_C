@@ -1,0 +1,16 @@
+Effectで魔法効果を設定する例
+
+用途:
+effecttypeをMagic、resisttypeをResistにして抵抗可能な魔法効果を設定します。
+
+主な属性:
+- effecttype: Magic
+- resisttype: Resist
+- targetm: 対象
+
+XML例:
+<Effect targetm="Party" visual="Horizontal" effecttype="Magic" resisttype="Resist" level="0" successrate="5" refability="true">
+<Motions/>
+<KeyCodes/>
+</Effect>
+

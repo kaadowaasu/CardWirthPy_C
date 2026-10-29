@@ -1,0 +1,16 @@
+Effectでキーコードイベントを発火する例
+
+用途:
+igniteをTrueにし、KeyCodesへキーコードを改行区切りで指定します。
+
+主な属性:
+- ignite: キーコードイベントを発火するか
+- KeyCodes: 発火するキーコード
+
+XML例:
+<Effect targetm="Selected" effecttype="None" resisttype="Unfail" ignite="True">
+<Motions/>
+<KeyCodes>攻撃
+魔法</KeyCodes>
+</Effect>
+

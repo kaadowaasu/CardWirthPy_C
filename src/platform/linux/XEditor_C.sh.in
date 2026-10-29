@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+app_dir="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# 単体EditorはEngineおよびWindows単体版と同様、
+# 実行ファイルのディレクトリをUserDataの既定ルートにする。
+user_data="${CARDWIRTH_USER_DATA:-${app_dir}}"
+
+mkdir -p -- "${user_data}"
+user_data="$(CDPATH= cd -- "${user_data}" && pwd)"
+export CARDWIRTHC_MANAGED_USERDATA_SESSION=1
+export CARDWIRTHC_USER_ROOT="${user_data}"
+if [[ -n "${WSL_DISTRO_NAME:-}" && -n "${PULSE_SERVER:-}" &&
+      -z "${SDL_AUDIODRIVER:-}" ]]; then
+    export SDL_AUDIODRIVER=pulseaudio
+fi
+exec "${app_dir}/@CARDWIRTH_OUTPUT_NAME@" "$@"

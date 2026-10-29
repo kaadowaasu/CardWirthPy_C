@@ -1,0 +1,19 @@
+Effectで能力値を変化させる例
+
+用途:
+Enhance系ではvalueとdurationを指定します。Vanish系は対象やカードを消去します。
+
+主な属性:
+- value: 能力の変化量
+- duration: 持続ラウンド数
+
+XML例:
+<Effect targetm="Selected" effecttype="None" resisttype="Unfail">
+<Motions>
+<Motion type="EnhanceAction" element="All" value="2" duration="10"/>
+<Motion type="EnhanceDefense" element="All" value="2" duration="10"/>
+<Motion type="VanishCard" element="All"/>
+</Motions>
+<KeyCodes/>
+</Effect>
+

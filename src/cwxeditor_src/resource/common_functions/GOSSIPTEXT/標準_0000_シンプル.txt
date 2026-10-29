@@ -1,0 +1,8 @@
+GOSSIPTEXTの基本的な使い方
+
+使用例:
+例1: GOSSIPTEXT(1)
+例2: GOSSIPTEXT(FINDGOSSIP("*生存"))
+例3: GOSSIPTEXT(3)
+
+指定位置にあるゴシップの名称を返します。返り値は現在のゴシップによって変わります。

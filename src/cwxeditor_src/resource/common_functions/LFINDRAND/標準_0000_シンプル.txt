@@ -1,0 +1,8 @@
+LFINDRANDの基本的な使い方
+
+使用例:
+例1: LFINDRAND("A", LIST("A", "B", "A"))
+例2: LFINDRAND("Z", LIST("A", "B", "A")) = 0
+例3: LFINDRAND(2, LIST(1, 2, 3)) = 2
+
+一致する要素の位置からランダムに1つを返します。一致する要素がなければ0です。

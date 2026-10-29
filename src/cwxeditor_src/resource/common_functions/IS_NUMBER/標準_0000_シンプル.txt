@@ -1,0 +1,8 @@
+IS_NUMBERの基本的な使い方
+
+使用例:
+例1: IS_NUMBER(42) = TRUE
+例2: IS_NUMBER(3.14) = TRUE
+例3: IS_NUMBER("42") = FALSE
+
+引数の値が数値型ならTRUE、それ以外ならFALSEを返します。

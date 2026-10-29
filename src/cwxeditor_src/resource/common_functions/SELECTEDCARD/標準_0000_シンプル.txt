@@ -1,0 +1,8 @@
+SELECTEDCARDの基本的な使い方
+
+使用例:
+例1: SELECTEDCARD()
+例2: CARDNAME(SELECTEDCARD())
+例3: CARDTYPE(SELECTEDCARD()) = SKILL
+
+現在選択されているカードのカード情報を返します。返り値は選択状態によって変わります。

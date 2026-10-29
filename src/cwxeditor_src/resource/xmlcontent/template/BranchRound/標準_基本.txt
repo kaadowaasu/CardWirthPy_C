@@ -1,0 +1,12 @@
+BranchRoundの基本的な使い方
+
+用途:
+現在の戦闘ラウンドを比較して分岐します。
+
+主な属性:
+- comparison: 比較演算子
+- round: 比較するラウンド
+
+XML例:
+<Branch type="Round" comparison="=" round="3"/>
+

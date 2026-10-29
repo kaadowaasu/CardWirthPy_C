@@ -1,0 +1,8 @@
+STATUSROUNDの基本的な使い方
+
+使用例:
+例1: STATUSROUND(SELECTED(), SLEEP)
+例2: STATUSROUND(1, POISON) >= 3
+例3: STATUSROUND(SELECTED(), ANTIMAGIC)
+
+指定キャラクターに付与された状態の残りラウンド数を返します。返り値は現在の状態によって変わります。

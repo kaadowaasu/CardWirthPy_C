@@ -1,0 +1,8 @@
+HAS_FLAGの基本的な使い方
+
+使用例:
+例1: HAS_FLAG(SELECTEDCARD(), "使用済み") = TRUE
+例2: HAS_FLAG(CARDINFO(1, 2), "強化済み") = TRUE
+例3: HAS_FLAG(1, "フラグA") -> エラー
+
+指定カードに指定名のフラグが定義されているかを返します。エディタ内の有効な引数ではTRUEを返します。

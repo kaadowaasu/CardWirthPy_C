@@ -1,0 +1,8 @@
+LATESTUSECARDOWNERの基本的な使い方
+
+最新のinusedcardのownerのキャラクター番号を返します。該当する使用中カードがない場合は0を返します。
+
+使用例:
+例1: LATESTUSECARDOWNER() = 1
+例2: LATESTUSECARDOWNER() <> 0
+例3: CASTNAME(LATESTUSECARDOWNER()) = "使用者名"

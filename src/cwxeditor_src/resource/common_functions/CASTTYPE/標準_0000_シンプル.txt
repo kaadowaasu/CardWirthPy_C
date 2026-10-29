@@ -1,0 +1,8 @@
+CASTTYPEの基本的な使い方
+
+使用例:
+例1: CASTTYPE(SELECTED())
+例2: CASTTYPE(1) = PLAYER
+例3: CASTTYPE(TRUE) -> エラー
+
+指定番号のキャラクター種別を返します。比較にはPLAYER、ENEMY、FRIENDを使用します。

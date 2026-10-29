@@ -1,0 +1,12 @@
+SetFlagの基本的な使い方
+
+用途:
+フラグへ真偽値を設定します。
+
+主な属性:
+- flag: フラグ名
+- value: 設定値
+
+XML例:
+<Set type="Flag" flag="フラグ\汎用1" value="False"/>
+

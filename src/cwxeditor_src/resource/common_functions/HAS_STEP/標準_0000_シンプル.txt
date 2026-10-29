@@ -1,0 +1,8 @@
+HAS_STEPの基本的な使い方
+
+使用例:
+例1: HAS_STEP(SELECTEDCARD(), "強化段階") = TRUE
+例2: HAS_STEP(CARDINFO(1, 2), "使用回数") = TRUE
+例3: HAS_STEP("カード", "段階A") -> エラー
+
+指定カードに指定名のステップが定義されているかを返します。エディタ内の有効な引数ではTRUEを返します。

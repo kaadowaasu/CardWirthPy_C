@@ -1,0 +1,8 @@
+CONCATSTRINGSの基本的な使い方
+
+使用例:
+例1: CONCATSTRINGS(LIST("A", "B", "C")) = "ABC"
+例2: CONCATSTRINGS(LIST("A", 2, TRUE), ":") = "A:2:TRUE"
+例3: CONCATSTRINGS(LIST(), ",") = ""
+
+リストの各要素を文字列化して連結します。第2引数で区切り文字を指定できます。

@@ -1,0 +1,8 @@
+FLAGTEXTの基本的な使い方
+
+使用例:
+例1: FLAGTEXT("扉が開いた", TRUE)
+例2: FLAGTEXT("扉が開いた", FALSE)
+例3: FLAGTEXT("イベント進行")
+
+指定フラグのTRUE側またはFALSE側の表示名を返します。返り値はフラグ設定によって変わります。

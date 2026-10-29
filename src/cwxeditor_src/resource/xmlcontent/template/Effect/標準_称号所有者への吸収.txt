@@ -1,0 +1,18 @@
+Effectで称号所有者を対象に吸収する例
+
+用途:
+holdingcouponを持つ対象へ吸収効果を与え、absorbtoで回復先を指定します。
+
+主な属性:
+- targetm: CouponHolder
+- holdingcoupon: 対象が持つ称号
+- absorbto: 吸収した値の回復先
+
+XML例:
+<Effect targetm="CouponHolder" holdingcoupon="効果対象" absorbto="Selected" effecttype="MagicalPhysic" resisttype="Unfail">
+<Motions>
+<Motion type="Absorb" element="All" damagetype="LevelRatio" value="1"/>
+</Motions>
+<KeyCodes/>
+</Effect>
+

@@ -1,0 +1,20 @@
+Effectの基本的な使い方
+
+用途:
+対象へ効果モーションを適用します。
+
+主な属性:
+- targetm: 対象
+- effecttype: 効果属性
+- resisttype: 抵抗方式
+- Motions: 適用する効果
+- KeyCodes: 発火するキーコード
+
+XML例:
+<Effect targetm="Selected" effecttype="Physic" resisttype="Unfail" level="1" successrate="5">
+<Motions>
+<Motion type="Damage" element="All" damagetype="Normal" value="1"/>
+</Motions>
+<KeyCodes/>
+</Effect>
+

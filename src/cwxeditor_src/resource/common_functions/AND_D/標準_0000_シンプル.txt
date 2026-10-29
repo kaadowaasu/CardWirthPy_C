@@ -1,0 +1,8 @@
+AND_Dの基本的な使い方
+
+使用例:
+例1: AND_D(TRUE, TRUE, FALSE) = FALSE
+例2: AND_D(TRUE, 3 < 5) = TRUE
+例3: AND_D(FALSE, 1 / 0 = 0) = FALSE
+
+左から順に評価し、最初のFALSEで評価を打ち切ります。例3の除算は評価されません。

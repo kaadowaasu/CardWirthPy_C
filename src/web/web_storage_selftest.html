@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>CardWirthPy_C Web Storage Self Test</title>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; background: #f5f7fa; color: #18202a; }
+    #result { white-space: pre-wrap; padding: 1rem; background: white; border: 1px solid #ccd4dd; }
+    .pass { color: #08752f; } .fail { color: #b00020; }
+  </style>
+</head>
+<body>
+  <h1>CardWirthPy_C Web Storage Self Test</h1>
+  <pre id="result">RUNNING</pre>
+  <script>globalThis.CardWirthWebStorageDatabaseSuffix = "-SelfTest";</script>
+  <script src="lib/vendor/jszip.min.js?v=3.10.1"></script>
+  <script src="web_storage.js?v=20260912-storage-v7"></script>
+  <script src="web_storage_selftest.js?v=20260904-storage-v6"></script>
+</body>
+</html>

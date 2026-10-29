@@ -1,0 +1,12 @@
+GetGossipの基本的な使い方
+
+用途:
+指定したゴシップを追加します。
+
+主な属性:
+- gossip: ゴシップ名
+- spchars: 特殊文字を展開するか
+
+XML例:
+<Get type="Gossip" gossip="一時ゴシップ" spchars="True"/>
+

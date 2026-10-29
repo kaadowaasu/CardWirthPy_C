@@ -1,0 +1,14 @@
+SetVariantStrで前後の空白を除去する例
+
+用途:
+trimをTrueにすると、本文の前後にある空白と改行を除去して代入します。
+
+主な属性:
+- variant: 代入先変数
+- trim: Trueを指定
+
+XML例:
+<Set type="VariantStr" variant="コモン\汎用1" insert="False" trim="True">
+  前後の空白を除去する文字列
+</Set>
+

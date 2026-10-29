@@ -1,0 +1,8 @@
+SETSTEPVALUEOFCARDの基本的な使い方
+
+使用例:
+例1: SETSTEPVALUEOFCARD(SELECTEDCARD(), "強化段階", 3) = TRUE
+例2: SETSTEPVALUEOFCARD(CARDINFO(1, 2), "使用回数", 0) = TRUE
+例3: SETSTEPVALUEOFCARD(SELECTEDCARD(), "強化段階", "3") -> エラー
+
+指定カードのステップへ数値を書き込みます。エディタ内では有効な引数に対してTRUEを返します。

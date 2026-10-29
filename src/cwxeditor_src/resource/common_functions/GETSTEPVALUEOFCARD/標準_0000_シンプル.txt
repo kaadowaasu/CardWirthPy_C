@@ -1,0 +1,8 @@
+GETSTEPVALUEOFCARDの基本的な使い方
+
+使用例:
+例1: GETSTEPVALUEOFCARD(SELECTEDCARD(), "強化段階")
+例2: GETSTEPVALUEOFCARD(CARDINFO(1, 2), "使用回数") >= 3
+例3: GETSTEPVALUEOFCARD("カード", "段階A") -> エラー
+
+指定カードが持つステップの現在値を返します。返り値はカードの状態によって変わります。

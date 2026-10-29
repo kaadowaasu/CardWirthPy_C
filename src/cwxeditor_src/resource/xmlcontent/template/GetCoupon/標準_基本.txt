@@ -1,0 +1,13 @@
+GetCouponの基本的な使い方
+
+用途:
+対象へ称号を付与します。
+
+主な属性:
+- coupon: 称号名
+- targets: 配布先
+- value: 得点
+
+XML例:
+<Get type="Coupon" coupon="一時クーポン" targets="Random" value="0"/>
+

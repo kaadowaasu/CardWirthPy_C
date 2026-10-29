@@ -1,0 +1,19 @@
+Effectで精神状態を変更する例
+
+用途:
+durationで精神状態の持続ラウンド数を指定します。Normalは精神状態を解除します。
+
+主な属性:
+- duration: 持続ラウンド数
+- Motion.type: Sleep、Confuse、Overheat、Brave、Panic、Normal
+
+XML例:
+<Effect targetm="Selected" effecttype="None" resisttype="Unfail">
+<Motions>
+<Motion type="Sleep" element="All" duration="10"/>
+<Motion type="Confuse" element="All" duration="10"/>
+<Motion type="Normal" element="All"/>
+</Motions>
+<KeyCodes/>
+</Effect>
+

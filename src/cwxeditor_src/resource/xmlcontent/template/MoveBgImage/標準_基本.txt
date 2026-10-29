@@ -1,0 +1,15 @@
+MoveBgImageの基本的な使い方
+
+用途:
+名前に一致する背景セルを移動・拡縮します。
+
+主な属性:
+- cellname: セル名
+- positiontype: 座標の指定方式
+- x・y: 移動量または座標
+- sizetype: サイズの指定方式
+- width・height: サイズ
+
+XML例:
+<Move type="BgImage" transition="Default" transitionspeed="5" cellname="テンプレート" positiontype="Absolute" x="50" y="50" sizetype="Percentage" width="80" height="80" doanime="False"/>
+

@@ -1,0 +1,24 @@
+TalkDialogの基本的な使い方
+
+用途:
+対象の称号に応じて台詞を選び、表示します。
+
+主な属性:
+- targetm: 話者の対象
+- RequiredCoupons: 台詞に必要な称号
+- Text: 表示文
+
+XML例:
+<Talk type="Dialog" boundarycheck="True" targetm="Selected">
+<Dialogs>
+<Dialog>
+<RequiredCoupons>＿子供</RequiredCoupons>
+<Text>「子供口調です。」</Text>
+</Dialog>
+<Dialog>
+<RequiredCoupons/>
+<Text>「その他口調です。」</Text>
+</Dialog>
+</Dialogs>
+</Talk>
+

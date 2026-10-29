@@ -1,0 +1,8 @@
+FINDKEYCODEの基本的な使い方
+
+使用例:
+例1: FINDKEYCODE(SELECTEDCARD(), "攻撃")
+例2: FINDKEYCODE(SELECTEDCARD(), "*攻撃")
+例3: FINDKEYCODE(CARDINFO(1, 2), "キーコードA", 2)
+
+指定カードのキーコードを検索し、見つかった位置を返します。返り値はカード設定によって変わります。

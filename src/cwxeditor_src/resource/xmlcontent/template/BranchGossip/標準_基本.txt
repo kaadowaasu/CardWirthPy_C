@@ -1,0 +1,12 @@
+BranchGossipの基本的な使い方
+
+用途:
+指定したゴシップの有無で分岐します。
+
+主な属性:
+- gossip: ゴシップ名
+- spchars: 特殊文字を展開するか
+
+XML例:
+<Branch type="Gossip" gossip="ゴシップ名"/>
+

@@ -1,0 +1,7 @@
+SCENARIONAMEの基本的な使い方
+
+使用例:
+例1: SCENARIONAME()
+例2: SCENARIONAME() = "サンプルシナリオ"
+
+現在実行しているシナリオ名を返します。引数はありません。

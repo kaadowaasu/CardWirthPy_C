@@ -1,0 +1,14 @@
+BranchKeyCodeの基本的な使い方
+
+用途:
+指定したキーコードを持つカードの有無で分岐します。
+
+主な属性:
+- targetkc: 検索対象
+- keyCode: キーコード
+- selectcard: 該当カードを選択するか
+- effectCardType: 対象カード種別
+
+XML例:
+<Branch type="KeyCode" targetkc="Random" keyCode="攻撃" selectcard="True" effectCardType="All"/>
+

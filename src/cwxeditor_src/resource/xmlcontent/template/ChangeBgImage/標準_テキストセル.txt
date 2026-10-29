@@ -1,0 +1,28 @@
+ChangeBgImageでテキストセルを配置する例
+
+用途:
+TextCellを使って背景上へ文字列を表示します。
+
+主な属性:
+- Text: 表示文字列
+- Font: フォント設定
+- Color: 文字色
+- UpdateType: 更新方式
+
+XML例:
+<Change type="BgImage" transition="Default" transitionspeed="5">
+<BgImages>
+<TextCell cellname="テキストセル">
+<Text>テキストセルです。</Text>
+<Font size="18" bold="false" italic="false" underline="false" strike="false">ＭＳ ゴシック</Font>
+<Vertical>false</Vertical>
+<Color r="0" g="0" b="0" a="255"/>
+<UpdateType>Variables</UpdateType>
+<Flag/>
+<Location left="260" top="118"/>
+<Size width="100" height="100"/>
+<Layer>1</Layer>
+</TextCell>
+</BgImages>
+</Change>
+

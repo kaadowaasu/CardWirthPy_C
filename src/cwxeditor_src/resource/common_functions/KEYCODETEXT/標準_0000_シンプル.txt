@@ -1,0 +1,8 @@
+KEYCODETEXTの基本的な使い方
+
+使用例:
+例1: KEYCODETEXT(SELECTEDCARD(), 1)
+例2: KEYCODETEXT(CARDINFO(1, 2), 2)
+例3: KEYCODETEXT(SELECTEDCARD(), FINDKEYCODE(SELECTEDCARD(), "攻撃"))
+
+指定カードのキーコードを位置から取得します。返り値はカード設定によって変わります。

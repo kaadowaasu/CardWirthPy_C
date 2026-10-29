@@ -1,0 +1,8 @@
+SETFLAGVALUEOFCARDの基本的な使い方
+
+使用例:
+例1: SETFLAGVALUEOFCARD(SELECTEDCARD(), "使用済み", TRUE) = TRUE
+例2: SETFLAGVALUEOFCARD(CARDINFO(1, 2), "強化済み", FALSE) = TRUE
+例3: SETFLAGVALUEOFCARD(SELECTEDCARD(), "使用済み", 1) -> エラー
+
+指定カードのフラグへ真偽値を書き込みます。エディタ内では有効な引数に対してTRUEを返します。

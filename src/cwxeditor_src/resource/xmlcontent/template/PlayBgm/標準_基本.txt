@@ -1,0 +1,15 @@
+PlayBgmの基本的な使い方
+
+用途:
+BGMを再生します。
+
+主な属性:
+- path: 音声ファイル
+- channel: チャンネル
+- volume: 音量
+- loopcount: ループ回数
+- fadein: フェードイン時間
+
+XML例:
+<Play type="Bgm" path="DefBattle.ogg" channel="0" volume="100" loopcount="0" fadein="0"/>
+

@@ -1,0 +1,14 @@
+BranchAbilityの基本的な使い方
+
+用途:
+能力値による判定結果で分岐します。
+
+主な属性:
+- physical: 身体能力
+- mental: 精神傾向
+- value: 判定レベル
+- targetm: 対象
+
+XML例:
+<Branch type="Ability" mental="Aggressive" physical="Dex" value="3" targetm="Selected"/>
+

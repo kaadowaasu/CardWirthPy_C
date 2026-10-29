@@ -1,0 +1,65 @@
+--- a/include/SDL3_mixer/SDL_mixer.h
++++ b/include/SDL3_mixer/SDL_mixer.h
+@@ -1523,6 +1523,16 @@
+  * \since This function is available since SDL_mixer 3.0.0.
+  */
+ extern SDL_DECLSPEC Sint64 SDLCALL MIX_GetTrackFadeFrames(MIX_Track *track);
++
++/**
++ * CardWirth local extension; this is not an upstream SDL_mixer API.
++ * Cancel an active fade-in, leaving configured gain and fade-out unchanged.
++ *
++ * \param track the track to change.
++ * \returns true on success, false on error; call SDL_GetError() for details.
++ * \threadsafety It is safe to call this function from any thread.
++ */
++extern SDL_DECLSPEC bool SDLCALL MIX_CardWirthCancelTrackFadeIn(MIX_Track *track);
+ 
+ /**
+  * Query how many loops remain for a given track.
+--- a/src/SDL_mixer.c
++++ b/src/SDL_mixer.c
+@@ -2109,6 +2109,23 @@
+     return retval;
+ }
+ 
++bool MIX_CardWirthCancelTrackFadeIn(MIX_Track *track)
++{
++    if (!CheckTrackParam(track)) {
++        return false;
++    }
++
++    LockTrack(track);
++    if (track->fade_direction > 0) {
++        track->fade_frames = 0;
++        track->total_fade_frames = 0;
++        track->fade_direction = 0;
++        track->fade_start_gain = 1.0f;
++    }
++    UnlockTrack(track);
++    return true;
++}
++
+ int MIX_GetTrackLoops(MIX_Track *track)
+ {
+     int retval = 0;
+--- a/src/SDL_mixer.sym
++++ b/src/SDL_mixer.sym
+@@ -87,6 +87,7 @@
+     MIX_GetAudioDecoderFormat;
+     MIX_SetTrackLoops;
+     MIX_GetTrackFadeFrames;
++    MIX_CardWirthCancelTrackFadeIn;
+     MIX_GetTrackTags;
+     MIX_GetTaggedTracks;
+     MIX_SetMixerFrequencyRatio;
+--- a/src/SDL_mixer.exports
++++ b/src/SDL_mixer.exports
+@@ -86,6 +86,7 @@
+ _MIX_GetAudioDecoderFormat
+ _MIX_SetTrackLoops
+ _MIX_GetTrackFadeFrames
++_MIX_CardWirthCancelTrackFadeIn
+ _MIX_GetTrackTags
+ _MIX_GetTaggedTracks
+ _MIX_SetMixerFrequencyRatio

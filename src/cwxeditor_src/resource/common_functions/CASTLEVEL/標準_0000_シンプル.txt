@@ -1,0 +1,8 @@
+CASTLEVELの基本的な使い方
+
+使用例:
+例1: CASTLEVEL(SELECTED())
+例2: CASTLEVEL(1) >= 5
+例3: CASTLEVEL("1") -> エラー
+
+指定番号のキャラクターのレベルを返します。返り値は対象によって変わります。

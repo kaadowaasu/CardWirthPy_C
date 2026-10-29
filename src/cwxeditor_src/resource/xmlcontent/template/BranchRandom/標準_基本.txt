@@ -1,0 +1,11 @@
+BranchRandomの基本的な使い方
+
+用途:
+指定した確率で成功・失敗に分岐します。
+
+主な属性:
+- value: 成功率（パーセント）
+
+XML例:
+<Branch type="Random" value="40"/>
+

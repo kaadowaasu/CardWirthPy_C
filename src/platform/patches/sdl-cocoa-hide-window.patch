@@ -1,0 +1,14 @@
+diff --git a/src/video/cocoa/SDL_cocoawindow.m b/src/video/cocoa/SDL_cocoawindow.m
+index 68c6ac5..48d5a3d 100644
+--- a/src/video/cocoa/SDL_cocoawindow.m
++++ b/src/video/cocoa/SDL_cocoawindow.m
+@@ -2819,7 +2819,7 @@ void Cocoa_HideWindow(SDL_VideoDevice *_this, SDL_Window *window)
+             }
+ 
+             if (new_focus) {
+-                NSWindow *newkey = ((__bridge SDL_CocoaWindowData *)window->internal).nswindow;
++                NSWindow *newkey = ((__bridge SDL_CocoaWindowData *)new_focus->internal).nswindow;
+                 [newkey makeKeyAndOrderFront:nil];
+             }
+         }
+

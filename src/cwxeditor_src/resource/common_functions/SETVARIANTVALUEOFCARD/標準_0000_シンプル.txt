@@ -1,0 +1,8 @@
+SETVARIANTVALUEOFCARDの基本的な使い方
+
+使用例:
+例1: SETVARIANTVALUEOFCARD(SELECTEDCARD(), "威力", 10) = TRUE
+例2: SETVARIANTVALUEOFCARD(CARDINFO(1, 2), "説明", "強化済み") = TRUE
+例3: SETVARIANTVALUEOFCARD(SELECTEDCARD(), "対象一覧", LIST(1, 2)) = TRUE
+
+指定カードのコモン変数へ値を書き込みます。エディタ内では有効な引数に対してTRUEを返します。

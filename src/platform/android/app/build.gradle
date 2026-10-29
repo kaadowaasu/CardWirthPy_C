@@ -1,0 +1,474 @@
+plugins {
+    id "com.android.application"
+}
+
+def bundledDataDirectory = file("../../../../test_env/Data")
+def bundledEditorResourceDirectory = file("../../../cwxeditor_src/resource")
+def bundledFontDirectory = file("../../../web/DataLoader/app/Data/Font")
+// Android の配布用 UserData を、書き込
+// み可能な実行時ツリーの唯一の入力元とする。不変のアプ
+// リ素材を変えず更新できるよう、src/ の外に置く。
+def bundledUserDataDirectory = file("../../../../dist/android/UserData")
+def bundledUserDataFontDirectory = file("../../../../dist/android/UserData/System/Font")
+def generatedAssetDirectory = file("$buildDir/generated/cardwirthAssets")
+def generatedAssetVersionDirectory = file("$buildDir/generated/cardwirthAssetVersion")
+def generatedIconDirectory = file("$buildDir/generated/cardwirthIcon")
+def appIconSource = file("../../../../icon/icon_128×128_pyC.png")
+// 配布用 ABI は通常の設定で選ぶ。IDE が注入する ABI 選択は
+// アプリを testOnly にするため、Play 配布には使わない。
+def distributableAbis = (findProperty("cardwirthAndroidAbis") ?: "arm64-v8a")
+    .toString().split(",").collect { it.trim() }
+if (distributableAbis.isEmpty() || distributableAbis.any { !(it in ["arm64-v8a", "x86_64"]) }) {
+    throw new GradleException("Unsupported Android ABI selection")
+}
+
+// 全 Android 製品構成のランチャーアイコンは、デスクトッ
+// プ・Apple と同じ利用者指定の icon/ から準備する。
+tasks.register("stageCardWirthAppIcon", Copy) {
+    from(appIconSource) {
+        rename { "cardwirth_app_icon.png" }
+    }
+    into(new File(generatedIconDirectory, "drawable-nodpi"))
+    doFirst {
+        if (!appIconSource.isFile()) {
+            throw new GradleException("Application icon is missing: ${appIconSource}")
+        }
+    }
+}
+
+// 公式 IPA 003.03 には IPA UI Gothic
+// が含まれないため、CardWirth の論理フォントが不足
+// する場合は、ライセンス付きの IPA 002.03 を使う
+// 。公開の配布ミラーから取得し、展開前にサイズと SHA-256
+// を検証する。不変の Data 素材ではなく UserData/System/Font
+// に置き、アプリの再ビルドなしで置換可能にする。
+// 出力名は Resource::set_systemfonttable
+// が使う論理名に合わせる。
+def ipaFontArchive = [
+    url: "https://distfiles.icmpv6.org/distfiles/IPAfont00203.zip",
+    length: 16045502L,
+    sha256: "ab6799af23903c1ee180e9c784d0b32b4f0b140f28df6980bdb0294f396c6a9e"
+]
+def ipaFontDownloads = [
+    "gothic.ttf": [sourceName: "ipag.ttf", length: 4940912L],
+    "uigothic.ttf": [sourceName: "ipagui.ttf", length: 4940836L],
+    "mincho.ttf": [sourceName: "ipam.ttf", length: 5849004L],
+    "pgothic.ttf": [sourceName: "ipagp.ttf", length: 4940820L],
+    "pmincho.ttf": [sourceName: "ipamp.ttf", length: 5849024L]
+]
+def ipaFontLicense = [
+    name: "enduser_license.txt",
+    sourceName: "enduser_license.txt",
+    length: 6296L
+]
+
+def isNonEmptyFile = { File candidate ->
+    candidate.isFile() && candidate.length() > 0L
+}
+
+tasks.register("ensureCardWirthIpaFonts") {
+    def ipaOutputFiles = ipaFontDownloads.keySet().collect { new File(bundledUserDataFontDirectory, it) }
+    ipaOutputFiles << new File(bundledUserDataFontDirectory, ipaFontLicense.name)
+    outputs.files(ipaOutputFiles)
+    doLast {
+        bundledUserDataFontDirectory.mkdirs()
+        def missing = ipaFontDownloads.findAll { name, ignored ->
+            !isNonEmptyFile(new File(bundledUserDataFontDirectory, name))
+        }
+        def licenseFile = new File(bundledUserDataFontDirectory, ipaFontLicense.name)
+        if (missing.isEmpty() && isNonEmptyFile(licenseFile)) {
+            logger.lifecycle("CardWirth IPA fonts already present: ${bundledUserDataFontDirectory}")
+            return
+        }
+
+        // 数値引数はボックス化した型で保持する。Gradle 上の Groovy の
+        // クロージャーのバイトコードは、基本型 long の引数を安定して扱えない。
+        def download = { String url, Number expectedLength, String expectedSha256, File destination ->
+            def temporary = File.createTempFile("cardwirth-ipa-", ".download", temporaryDir)
+            try {
+                def connection = new URL(url).openConnection()
+                connection.connectTimeout = 30000
+                connection.readTimeout = 120000
+                connection.setRequestProperty("User-Agent", "CardWirthPy_C Android build")
+                connection.connect()
+                def digest = java.security.MessageDigest.getInstance("SHA-256")
+                temporary.withOutputStream { output ->
+                    connection.inputStream.withCloseable { input ->
+                        byte[] buffer = new byte[64 * 1024]
+                        int count
+                        while ((count = input.read(buffer)) != -1) {
+                            output.write(buffer, 0, count)
+                            digest.update(buffer, 0, count)
+                        }
+                    }
+                }
+                if (temporary.length() != expectedLength) {
+                    throw new GradleException(
+                        "Downloaded IPA asset has an unexpected size: ${url} " +
+                        "(${temporary.length()} bytes; expected ${expectedLength})")
+                }
+                def actualSha256 = digest.digest().encodeHex().toString()
+                if (expectedSha256 != null && actualSha256 != expectedSha256) {
+                    throw new GradleException(
+                        "Downloaded IPA asset has an unexpected SHA-256: ${url} " +
+                        "(${actualSha256}; expected ${expectedSha256})")
+                }
+                try {
+                    java.nio.file.Files.move(
+                        temporary.toPath(), destination.toPath(),
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                        java.nio.file.StandardCopyOption.ATOMIC_MOVE)
+                } catch (java.nio.file.AtomicMoveNotSupportedException ignored) {
+                    java.nio.file.Files.move(
+                        temporary.toPath(), destination.toPath(),
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+                }
+            } finally {
+                if (temporary.exists()) temporary.delete()
+            }
+        }
+
+        def archive = File.createTempFile("cardwirth-ipa-", ".zip", temporaryDir)
+        try {
+            logger.lifecycle("Downloading IPA font archive from ${ipaFontArchive.url}")
+            download(ipaFontArchive.url, ipaFontArchive.length, ipaFontArchive.sha256, archive)
+            def zip = new java.util.zip.ZipFile(archive)
+            try {
+                def extract = { String sourceName, Number expectedLength, File destination ->
+                    def entry = zip.entries().toList().find { candidate ->
+                        !candidate.isDirectory() &&
+                            candidate.name.replace("\\", "/").tokenize("/").last() == sourceName
+                    }
+                    if (entry == null) {
+                        throw new GradleException("IPA archive entry was not found: ${sourceName}")
+                    }
+                    def temporary = File.createTempFile("cardwirth-ipa-", ".font", temporaryDir)
+                    try {
+                        temporary.withOutputStream { output ->
+                            zip.getInputStream(entry).withCloseable { input ->
+                                byte[] buffer = new byte[64 * 1024]
+                                int count
+                                while ((count = input.read(buffer)) != -1)
+                                    output.write(buffer, 0, count)
+                            }
+                        }
+                        if (temporary.length() != expectedLength) {
+                            throw new GradleException(
+                                "Extracted IPA font has an unexpected size: ${sourceName} " +
+                                "(${temporary.length()} bytes; expected ${expectedLength})")
+                        }
+                        try {
+                            java.nio.file.Files.move(
+                                temporary.toPath(), destination.toPath(),
+                                java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                                java.nio.file.StandardCopyOption.ATOMIC_MOVE)
+                        } catch (java.nio.file.AtomicMoveNotSupportedException ignored) {
+                            java.nio.file.Files.move(
+                                temporary.toPath(), destination.toPath(),
+                                java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+                        }
+                    } finally {
+                        if (temporary.exists()) temporary.delete()
+                    }
+                }
+
+                missing.each { name, metadata ->
+                    def destination = new File(bundledUserDataFontDirectory, name)
+                    logger.lifecycle("Extracting IPA font ${name} from ${metadata.sourceName}")
+                    extract(metadata.sourceName, metadata.length, destination)
+                }
+                if (!isNonEmptyFile(licenseFile)) {
+                    logger.lifecycle("Extracting IPA font license")
+                    extract(ipaFontLicense.sourceName, ipaFontLicense.length, licenseFile)
+                }
+            } finally {
+                zip.close()
+            }
+        } finally {
+            if (archive.exists()) archive.delete()
+        }
+        ipaFontDownloads.each { name, ignored ->
+            if (!isNonEmptyFile(new File(bundledUserDataFontDirectory, name)))
+                throw new GradleException("IPA font was not staged: ${name}")
+        }
+    }
+}
+
+// UserData 全体を一つの CopySpec に渡
+// さない。Windows の Gradle は、日本語名
+// のディレクトリーで余分な元ディレクトリー階層を残したり
+// 、同期フォルダー由来の日時の下のファイルを省いたりし得
+// る。最上位の各項目を列挙し、素材への対応を明示する。
+def bundledUserDataEntries = bundledUserDataDirectory.listFiles()?.toList()?.sort { left, right ->
+    left.name <=> right.name
+} ?: []
+// 新しいチェックアウトでは、Gradle 設定時の最上位列挙後に
+// ensureCardWirthIpaFonts が System/Font
+// を作る。最初のビルドではその遅れて作る部分木を明示的に追加
+// し、設定時に存在するようになれば通常の最上位コピーで扱う。
+def bundledUserDataHasSystemEntry = bundledUserDataEntries.any { it.name == "System" }
+if (bundledUserDataEntries.isEmpty()) {
+    throw new GradleException("Required CardWirth UserData directory is empty: ${bundledUserDataDirectory}")
+}
+
+def regularFiles = { File source ->
+    if (!source.isDirectory()) {
+        throw new GradleException("Required CardWirth asset directory is missing: ${source}")
+    }
+    def result = []
+    java.nio.file.Files.walk(source.toPath()).withCloseable { stream ->
+        stream.filter { path -> java.nio.file.Files.isRegularFile(path) }
+            .forEach { path -> result << path.toFile() }
+    }
+    result.sort { left, right -> left.absolutePath <=> right.absolutePath }
+}
+
+def updateAssetDigest = { java.security.MessageDigest digest, File source, String assetPrefix ->
+    regularFiles(source).each { entry ->
+        def relativePath = source.toPath().relativize(entry.toPath()).toString().replace(File.separator, "/")
+        if (relativePath == ".CardWirthPy.lock" || relativePath.endsWith("/.CardWirthPy.lock")) return
+        def relative = assetPrefix + relativePath
+        digest.update(relative.getBytes("UTF-8"))
+        entry.withInputStream { input ->
+            byte[] buffer = new byte[64 * 1024]
+            int count
+            while ((count = input.read(buffer)) >= 0) {
+                digest.update(buffer, 0, count)
+            }
+        }
+    }
+}
+
+tasks.register("generateCardWirthAssetVersion") {
+    dependsOn("ensureCardWirthIpaFonts")
+    def outputFile = new File(generatedAssetVersionDirectory,
+        "values/cardwirth_assets.xml")
+    outputs.file(outputFile)
+    inputs.dir(bundledDataDirectory)
+    inputs.dir(bundledEditorResourceDirectory)
+    inputs.dir(bundledFontDirectory)
+    inputs.dir(bundledUserDataDirectory)
+    doLast {
+        def digest = java.security.MessageDigest.getInstance("SHA-256")
+        updateAssetDigest(digest, bundledDataDirectory, "Data/")
+        updateAssetDigest(digest, bundledEditorResourceDirectory, "resource/")
+        updateAssetDigest(digest, bundledFontDirectory, "Data/Font/")
+        updateAssetDigest(digest, bundledUserDataDirectory, "UserDataSeed/")
+        def version = digest.digest().encodeHex().toString()
+        outputFile.parentFile.mkdirs()
+        outputFile.setText(
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
+            "<resources><string name=\"bundled_asset_version\" translatable=\"false\">" +
+            version + "</string></resources>\n", "UTF-8")
+    }
+}
+
+tasks.register("stageCardWirthAssets", Sync) {
+    dependsOn("ensureCardWirthIpaFonts")
+    into generatedAssetDirectory
+    from(bundledDataDirectory) { into "Data" }
+    // 旧テスト用 Data には完全な日本語フォントがない。Web
+    // で使う同じ OFL フォントを Android でも再利用し、
+    // OEM のシステムフォントに依存しない一定の文字画像を得る。
+    from(bundledFontDirectory) { into "Data/Font" }
+    from(bundledEditorResourceDirectory) { into "resource" }
+    // 配布用 UserData 全体の最上位項目を、アプリ専用の書き込み可能領
+    // 域へ追加する。Windows の Yado/DEBUG宿 と Scenario/0.
+    // 初心者向け で正しく対応させるため、項目のルートを明示する。
+    bundledUserDataEntries.each { File entry ->
+        if (entry.isDirectory()) {
+            from(entry) {
+                into "UserDataSeed/${entry.name}"
+                exclude "**/.CardWirthPy.lock"
+            }
+        } else if (entry.isFile() && entry.name != ".CardWirthPy.lock") {
+            from(entry) { into "UserDataSeed" }
+        }
+    }
+    if (!bundledUserDataHasSystemEntry) {
+        from(bundledUserDataFontDirectory) {
+            into "UserDataSeed/System/Font"
+            exclude "**/.CardWirthPy.lock"
+        }
+    }
+    doLast {
+        // 同梱 UserData の各ファイルを個別に記録する。Android
+        // の実行環境は前の一覧を使い、未変更の管理対象初期データと利
+        // 用者の編集済みファイルを区別する。デスクトップ・Apple
+        // の UserDataLayout の更新規則に合わせる。
+        def stagedRoot = new File(generatedAssetDirectory, "UserDataSeed")
+        def manifest = new File(generatedAssetDirectory, "UserDataSeed.manifest")
+        def rows = regularFiles(stagedRoot).collect { entry ->
+            def relative = stagedRoot.toPath().relativize(entry.toPath()).toString()
+                .replace(File.separator, "/")
+            def digest = java.security.MessageDigest.getInstance("SHA-256")
+            entry.withInputStream { input ->
+                byte[] buffer = new byte[64 * 1024]
+                int count
+                while ((count = input.read(buffer)) >= 0) digest.update(buffer, 0, count)
+            }
+            def encodedPath = relative.getBytes("UTF-8").encodeBase64().toString()
+            "${encodedPath}\t${digest.digest().encodeHex()}"
+        }.sort()
+        manifest.parentFile.mkdirs()
+        manifest.setText("CWANDROIDUSERDATA1\n" + rows.join("\n") + "\n", "UTF-8")
+    }
+}
+
+tasks.register("verifyCardWirthUserDataStage") {
+    dependsOn("stageCardWirthAssets")
+    doLast {
+        def sourceFiles = regularFiles(bundledUserDataDirectory).findAll { entry ->
+            def relative = bundledUserDataDirectory.toPath().relativize(entry.toPath()).toString()
+                .replace(File.separator, "/")
+            relative != ".CardWirthPy.lock" && !relative.endsWith("/.CardWirthPy.lock")
+        }.collectEntries { entry ->
+            def relative = bundledUserDataDirectory.toPath().relativize(entry.toPath()).toString()
+                .replace(File.separator, "/")
+            [(relative): entry]
+        }
+        def stagedRoot = new File(generatedAssetDirectory, "UserDataSeed")
+        def stagedFiles = regularFiles(stagedRoot).collectEntries { entry ->
+            def relative = stagedRoot.toPath().relativize(entry.toPath()).toString()
+                .replace(File.separator, "/")
+            [(relative): entry]
+        }
+        def missing = sourceFiles.keySet().findAll { !stagedFiles.containsKey(it) }.sort()
+        def extra = stagedFiles.keySet().findAll { !sourceFiles.containsKey(it) }.sort()
+        def sizeMismatches = sourceFiles.keySet().intersect(stagedFiles.keySet()).findAll { relative ->
+            sourceFiles[relative].length() != stagedFiles[relative].length()
+        }.sort()
+        if (!missing.isEmpty() || !extra.isEmpty() || !sizeMismatches.isEmpty()) {
+            throw new GradleException(
+                "UserData asset staging mismatch; missing=${missing}, extra=${extra}, " +
+                "sizeMismatches=${sizeMismatches}")
+        }
+        logger.lifecycle("Verified complete Android UserData seed: ${sourceFiles.size()} files")
+    }
+}
+
+android {
+    namespace "jp.cardwirth.sdlsample"
+    compileSdk 36
+    ndkVersion "28.2.13676358"
+
+    defaultConfig {
+        applicationId "jp.cardwirth.cardwirthc"
+        minSdk 24
+        targetSdk 36
+        versionCode 3
+        versionName "0.2.0"
+
+        externalNativeBuild {
+            cmake {
+                arguments "-DANDROID_PLATFORM=android-21",
+                        "-DCARDWIRTH_SUPPRESS_WARNINGS=ON",
+                          "-DANDROID_STL=c++_static"
+                abiFilters(*distributableAbis)
+            }
+        }
+    }
+
+    flavorDimensions += "product"
+    productFlavors {
+        // all {} は Gradle のコレクションのコールバックで、構成の
+        // 宣言ではない。名前付きのファクトリーを使い、ALL 製品を実際に作る。
+        create("all") {
+            dimension "product"
+            applicationId "net.webcardwirth.cwsengoku.cardwirthpy_c_app"
+            resValue "string", "app_name", "CardWirthPy_C"
+            externalNativeBuild {
+                cmake { arguments "-DCARDWIRTH_APP_VARIANT=All" }
+            }
+        }
+        engine {
+            dimension "product"
+            applicationIdSuffix ".engine"
+            resValue "string", "app_name", "CardWirthPy_C"
+            externalNativeBuild {
+                cmake { arguments "-DCARDWIRTH_APP_VARIANT=Engine" }
+            }
+        }
+        editor {
+            dimension "product"
+            applicationIdSuffix ".editor"
+            resValue "string", "app_name", "XEditor_C"
+            externalNativeBuild {
+                cmake { arguments "-DCARDWIRTH_APP_VARIANT=Editor" }
+            }
+        }
+        explorer {
+            dimension "product"
+            applicationIdSuffix ".explorer"
+            resValue "string", "app_name", "DataExplorer_C"
+            externalNativeBuild {
+                cmake { arguments "-DCARDWIRTH_APP_VARIANT=Explorer" }
+            }
+        }
+    }
+
+    // Play への送信にはローカルで指定する専用のアップロード鍵を使う。
+    // 署名済み Release バンドルでデバッグ用キーストアに戻らない。
+    def uploadStore = System.getenv("CARDWIRTH_ANDROID_KEYSTORE")
+    if (uploadStore) {
+        def uploadAlias = System.getenv("CARDWIRTH_ANDROID_KEY_ALIAS")
+        def uploadStorePassword = System.getenv("CARDWIRTH_ANDROID_STORE_PASSWORD")
+        def uploadKeyPassword = System.getenv("CARDWIRTH_ANDROID_KEY_PASSWORD")
+        if (!uploadAlias || !uploadStorePassword || !uploadKeyPassword) {
+            throw new GradleException("Android upload signing environment is incomplete")
+        }
+        signingConfigs {
+            upload {
+                storeFile file(uploadStore)
+                storePassword uploadStorePassword
+                keyAlias uploadAlias
+                keyPassword uploadKeyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            debuggable true
+        }
+        release {
+            debuggable false
+            if (uploadStore) signingConfig signingConfigs.upload
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+        }
+    }
+
+    sourceSets {
+        main {
+            // 固定版の SDL ソースに同梱された Java の連携処理を再利用する。
+            java.srcDirs = [
+                "src/main/java",
+                "../../../3rdparty/SDL/android-project/app/src/main/java"
+            ]
+            // NativeStorage は実ファイルシステムを必要とする。MainActivity がこの
+            // 不変 Data ツリーを、素材のビルドごとに一度 files/app/Data へ展開する。
+            assets.srcDirs = [generatedAssetDirectory]
+            res.srcDirs += [generatedAssetVersionDirectory]
+            res.srcDirs += [generatedIconDirectory]
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path file("../../../CMakeLists.txt")
+            version "3.31.6"
+        }
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+}
+
+tasks.named("preBuild").configure {
+    dependsOn("verifyCardWirthUserDataStage", "generateCardWirthAssetVersion",
+              "stageCardWirthAppIcon")
+}

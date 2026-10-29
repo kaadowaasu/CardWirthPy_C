@@ -1,0 +1,20 @@
+Effectで状態異常を付与・解除する例
+
+用途:
+付与モーションではdurationを指定し、Dis系モーションで解除します。
+
+主な属性:
+- duration: 持続ラウンド数
+- Motion.type: Bind、Silence、FaceUp、AntiMagicおよび各解除
+
+XML例:
+<Effect targetm="Selected" effecttype="None" resisttype="Unfail">
+<Motions>
+<Motion type="Bind" element="All" duration="10"/>
+<Motion type="DisBind" element="All"/>
+<Motion type="Silence" element="All" duration="10"/>
+<Motion type="DisSilence" element="All"/>
+</Motions>
+<KeyCodes/>
+</Effect>
+

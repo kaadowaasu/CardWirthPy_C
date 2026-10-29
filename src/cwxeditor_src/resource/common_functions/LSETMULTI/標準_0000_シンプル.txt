@@ -1,0 +1,8 @@
+LSETMULTIの基本的な使い方
+
+使用例:
+例1: LSETMULTI("所持品", LIST(1, 3), LIST("薬草", "傷薬")) = TRUE
+例2: LSETMULTI("数値一覧", LIST(2), LIST(100)) = TRUE
+例3: LSETMULTI("所持品", LIST(1, 2), LIST("薬草")) = FALSE
+
+第1引数で指定したリスト変数の複数要素を、位置リストと値リストの対応に従って置き換えます。

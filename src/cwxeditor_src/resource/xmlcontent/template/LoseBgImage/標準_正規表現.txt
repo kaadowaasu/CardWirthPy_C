@@ -1,0 +1,12 @@
+LoseBgImageでセル名に正規表現を使う例
+
+用途:
+regexをTrueにすると、cellnameを正規表現として複数の背景セルへ一致させられます。
+
+主な属性:
+- regex: 正規表現を使うか
+- cellname: 正規表現パターン
+
+XML例:
+<Lose type="BgImage" transition="Default" transitionspeed="5" regex="True" cellname="prefix_.*" doanime="False"/>
+

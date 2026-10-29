@@ -1,0 +1,8 @@
+CARDCOUNTの基本的な使い方
+
+使用例:
+例1: CARDCOUNT(SELECTEDCARD())
+例2: CARDCOUNT(CARDINFO(1, 2))
+例3: CARDCOUNT("カード名") -> エラー
+
+指定カードの所持数を返します。引数にはカード情報を指定します。

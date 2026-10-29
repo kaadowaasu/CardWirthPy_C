@@ -1,0 +1,12 @@
+SetStepの基本的な使い方
+
+用途:
+ステップへ値を設定します。
+
+主な属性:
+- step: ステップ名
+- value: 設定値
+
+XML例:
+<Set type="Step" step="ステップ\汎用1" value="4"/>
+

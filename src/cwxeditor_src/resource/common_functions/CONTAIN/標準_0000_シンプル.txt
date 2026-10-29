@@ -1,0 +1,8 @@
+CONTAINの基本的な使い方
+
+使用例:
+例1: CONTAIN(LIST(0, 0, 100, 100), LIST(50, 50)) = TRUE
+例2: CONTAIN(LIST(0, 0, 100, 100), LIST(100, 100)) = TRUE
+例3: CONTAIN(LIST(0, 0, 100, 100), LIST(101, 50)) = FALSE
+
+第1引数の矩形内に第2引数の座標が含まれるかを返します。矩形の境界上もTRUEです。

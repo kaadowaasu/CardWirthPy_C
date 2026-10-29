@@ -1,0 +1,11 @@
+BranchMoneyの基本的な使い方
+
+用途:
+所持金が指定額以上かどうかで分岐します。
+
+主な属性:
+- value: 基準金額
+
+XML例:
+<Branch type="Money" value="400"/>
+

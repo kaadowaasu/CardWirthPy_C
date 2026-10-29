@@ -1,0 +1,11 @@
+BranchCompleteStampの基本的な使い方
+
+用途:
+指定した終了印の有無で分岐します。
+
+主な属性:
+- scenario: シナリオ名
+
+XML例:
+<Branch type="CompleteStamp" scenario="シナリオ名"/>
+

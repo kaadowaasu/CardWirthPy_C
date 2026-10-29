@@ -1,0 +1,8 @@
+COUPONTEXTの基本的な使い方
+
+使用例:
+例1: COUPONTEXT(SELECTED(), 1)
+例2: COUPONTEXT(SELECTED(), FINDCOUPON(SELECTED(), "*退治"))
+例3: COUPONTEXT(1, 2)
+
+指定キャラクターが持つ称号の名称を、称号位置から取得します。返り値は所持称号によって変わります。

@@ -1,0 +1,8 @@
+STATUSVALUEの基本的な使い方
+
+使用例:
+例1: STATUSVALUE(SELECTED(), PARALYZE)
+例2: STATUSVALUE(1, POISON) >= 5
+例3: STATUSVALUE(SELECTED(), ENHACTION)
+
+指定キャラクターに付与された状態の強度を返します。返り値は現在の状態によって変わります。

@@ -1,0 +1,13 @@
+BranchBeastの基本的な使い方
+
+用途:
+指定した召喚獣カードの所持状況で分岐します。
+
+主な属性:
+- id: 召喚獣カードID
+- targets: 検索範囲
+- number: 必要枚数
+
+XML例:
+<Branch type="Beast" id="1" targets="Field" number="1"/>
+

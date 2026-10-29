@@ -1,0 +1,13 @@
+CheckVariantの基本的な使い方
+
+用途:
+計算式を評価し、Booleanの結果を条件として使用します。
+
+主な属性:
+- Expression: calculator.pyの文法で記述する式
+
+XML例:
+<Check type="Variant">
+<Expression>LEN("abc") = 3</Expression>
+</Check>
+

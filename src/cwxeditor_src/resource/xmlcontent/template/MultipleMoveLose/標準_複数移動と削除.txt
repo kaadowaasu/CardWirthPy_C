@@ -1,0 +1,21 @@
+MultipleMoveLoseで複数セルを移動・削除する例
+
+用途:
+Movesに移動設定、Losesに削除設定を並べ、一度の背景更新として処理します。
+
+主な属性:
+- Moves: 複数のMove
+- Loses: 複数のLose
+
+XML例:
+<MultipleMoveLose type="BgImage" transition="Default" transitionspeed="5" doanime="False">
+<Moves>
+<Move cellname="移動セル1" positiontype="Absolute" x="50" y="50" sizetype="Absolute" width="80" height="80"/>
+<Move cellname="移動セル2" positiontype="Relative" x="150" y="150" sizetype="Percentage" width="80" height="80"/>
+</Moves>
+<Loses>
+<Lose cellname="削除セル1"/>
+<Lose cellname="削除セル2"/>
+</Loses>
+</MultipleMoveLose>
+

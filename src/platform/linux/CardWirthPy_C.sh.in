@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+app_dir="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# 単体Engineは従来のCardWirthの配置に従い、Data、Scenario
+# 、Yado、Settings.xmlを実行ファイルの横に置く。CARDWIRTH_USER_DATA
+# はテストや外部プロファイル向けの明示的な上書き設定として残す。
+user_data="${CARDWIRTH_USER_DATA:-${app_dir}}"
+
+# 読み取り専用の可能性があるインストール先に触れる前に、コマンドラインの上書き設定を解決する。
+expect_user_data=0
+for argument in "$@"; do
+    if (( expect_user_data )); then
+        user_data="$argument"
+        expect_user_data=0
+    elif [[ "$argument" == "--user-data" ]]; then
+        expect_user_data=1
+    elif [[ "$argument" == --user-data=* ]]; then
+        user_data="${argument#--user-data=}"
+    fi
+done
+if (( expect_user_data )) || [[ -z "$user_data" ]]; then
+    printf '%s\n' '--user-data requires a nonempty folder path.' >&2
+    exit 1
+fi
+mkdir -p -- "${user_data}"
+user_data="$(CDPATH= cd -- "${user_data}" && pwd)"
+if [[ -n "${WSL_DISTRO_NAME:-}" && -n "${PULSE_SERVER:-}" &&
+      -z "${SDL_AUDIODRIVER:-}" ]]; then
+    export SDL_AUDIODRIVER=pulseaudio
+fi
+# WSLgではSDL/Mesaに利用可能な高速化ドライバーを選ばせる。llvmpipe
+# を既定に強制すると、D3D12/virtioが使えてもEngine
+# やダイアログの拡大縮小描画がCPU処理になる。黒いウィンドウに
+# なる環境向けの従来互換経路は、明示的に有効化した場合だけ使う。
+if [[ -n "${WSL_DISTRO_NAME:-}" ]]; then
+    if [[ -n "${DISPLAY:-}" && -z "${SDL_VIDEODRIVER:-}" ]]; then
+        export SDL_VIDEODRIVER=x11
+    fi
+    if [[ "${CARDWIRTH_WSL_SOFTWARE:-0}" == "1" ]]; then
+        export SDL_RENDER_DRIVER="${SDL_RENDER_DRIVER:-software}"
+        export LIBGL_ALWAYS_SOFTWARE="${LIBGL_ALWAYS_SOFTWARE:-1}"
+        export GALLIUM_DRIVER="${GALLIUM_DRIVER:-llvmpipe}"
+        export MESA_LOADER_DRIVER_OVERRIDE="${MESA_LOADER_DRIVER_OVERRIDE:-llvmpipe}"
+    fi
+    if [[ -z "${SDL_WINDOW_ACTIVATE_WHEN_SHOWN:-}" ]]; then
+        export SDL_WINDOW_ACTIVATE_WHEN_SHOWN=1
+    fi
+    if [[ -z "${SDL_WINDOW_ACTIVATE_WHEN_RAISED:-}" ]]; then
+        export SDL_WINDOW_ACTIVATE_WHEN_RAISED=1
+    fi
+fi
+exec "${app_dir}/@CARDWIRTH_OUTPUT_NAME@" \
+    --user-data "${user_data}" "$@"

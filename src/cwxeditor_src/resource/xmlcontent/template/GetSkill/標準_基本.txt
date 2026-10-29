@@ -1,0 +1,13 @@
+GetSkillの基本的な使い方
+
+用途:
+指定したスキルカードを取得します。
+
+主な属性:
+- id: カードID
+- targets: 配布先
+- number: 枚数
+
+XML例:
+<Get type="Skill" id="1" targets="Field" number="1"/>
+

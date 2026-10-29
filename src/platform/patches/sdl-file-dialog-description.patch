@@ -1,0 +1,217 @@
+diff --git a/include/SDL3/SDL_dialog.h b/include/SDL3/SDL_dialog.h
+index 1e01347..f3496d3 100644
+--- a/include/SDL3/SDL_dialog.h
++++ b/include/SDL3/SDL_dialog.h
+@@ -295,6 +295,9 @@ typedef enum SDL_FileDialogType
+  * - `SDL_PROP_FILE_DIALOG_MANY_BOOLEAN`: true to allow the user to select
+  *   more than one entry.
+  * - `SDL_PROP_FILE_DIALOG_TITLE_STRING`: the title for the dialog.
++ * - `SDL_PROP_FILE_DIALOG_DESCRIPTION_STRING`: an optional caller-provided
++ *   description for an "Open Folder" dialog. Platforms may display it in the
++ *   folder picker, independently from the title.
+  * - `SDL_PROP_FILE_DIALOG_ACCEPT_STRING`: the label that the accept button
+  *   should have.
+  * - `SDL_PROP_FILE_DIALOG_CANCEL_STRING`: the label that the cancel button
+@@ -331,6 +334,7 @@ extern SDL_DECLSPEC void SDLCALL SDL_ShowFileDialogWithProperties(SDL_FileDialog
+ #define SDL_PROP_FILE_DIALOG_LOCATION_STRING     "SDL.filedialog.location"
+ #define SDL_PROP_FILE_DIALOG_MANY_BOOLEAN        "SDL.filedialog.many"
+ #define SDL_PROP_FILE_DIALOG_TITLE_STRING        "SDL.filedialog.title"
++#define SDL_PROP_FILE_DIALOG_DESCRIPTION_STRING  "SDL.filedialog.description"
+ #define SDL_PROP_FILE_DIALOG_ACCEPT_STRING       "SDL.filedialog.accept"
+ #define SDL_PROP_FILE_DIALOG_CANCEL_STRING       "SDL.filedialog.cancel"
+ 
+diff --git a/src/dialog/cocoa/SDL_cocoadialog.m b/src/dialog/cocoa/SDL_cocoadialog.m
+index a2337cb..9184238 100644
+--- a/src/dialog/cocoa/SDL_cocoadialog.m
++++ b/src/dialog/cocoa/SDL_cocoadialog.m
+@@ -70,6 +70,7 @@ void SDL_SYS_ShowFileDialogWithProperties(SDL_FileDialogType type, SDL_DialogFil
+     bool allow_many = SDL_GetBooleanProperty(props, SDL_PROP_FILE_DIALOG_MANY_BOOLEAN, false);
+     const char *default_location = SDL_GetStringProperty(props, SDL_PROP_FILE_DIALOG_LOCATION_STRING, NULL);
+     const char *title = SDL_GetStringProperty(props, SDL_PROP_FILE_DIALOG_TITLE_STRING, NULL);
++    const char *description = SDL_GetStringProperty(props, SDL_PROP_FILE_DIALOG_DESCRIPTION_STRING, NULL);
+     const char *accept = SDL_GetStringProperty(props, SDL_PROP_FILE_DIALOG_ACCEPT_STRING, NULL);
+ 
+     if (filters) {
+@@ -108,6 +109,10 @@ void SDL_SYS_ShowFileDialogWithProperties(SDL_FileDialogType type, SDL_DialogFil
+         [dialog_as_open setCanChooseFiles:NO];
+         [dialog_as_open setCanChooseDirectories:YES];
+         [dialog_as_open setAllowsMultipleSelection:((allow_many == true) ? YES : NO)];
++        // CardWirth: keep the caller's directory message visible separately from the panel title.
++        if (description && *description) {
++            [dialog_as_open setMessage:[NSString stringWithUTF8String:description]];
++        }
+         dialog = dialog_as_open;
+         break;
+     };
+diff --git a/src/dialog/windows/SDL_windowsdialog.c b/src/dialog/windows/SDL_windowsdialog.c
+index 660665c..69cdb48 100644
+--- a/src/dialog/windows/SDL_windowsdialog.c
++++ b/src/dialog/windows/SDL_windowsdialog.c
+@@ -378,6 +378,7 @@ static const CLSID SDL_CLSID_FileSaveDialog = { 0xc0b4e2f3, 0xba21, 0x4773, { 0x
+ static const IID SDL_IID_IFileDialog = { 0x42f85136, 0xdb7e, 0x439c, { 0x85, 0xf1, 0xe4, 0x07, 0x5d, 0x13, 0x5f, 0xc8 } };
+ static const IID SDL_IID_IFileDialog2 = { 0x61744fc7, 0x85b5, 0x4791, { 0xa9, 0xb0, 0x27, 0x22, 0x76, 0x30, 0x9b, 0x13 } };
+ static const IID SDL_IID_IFileOpenDialog = { 0xd57c7288, 0xd4ad, 0x4768, { 0xbe, 0x02, 0x9d, 0x96, 0x95, 0x32, 0xd9, 0x60 } };
++static const IID SDL_IID_IFileDialogCustomize = { 0xe6fdd21a, 0x163f, 0x4975, { 0x9c, 0x8c, 0xa6, 0x9f, 0x1b, 0xa3, 0x70, 0x34 } };
+ /* *INDENT-ON* */ // clang-format on
+ 
+ // If this number is too small, selecting too many files will give an error
+@@ -407,6 +408,7 @@ typedef struct
+     char *default_folder;
+     void *userdata;
+     char *title;
++    char *description;
+     char *accept;
+     char *cancel;
+ } winFArgs;
+@@ -426,6 +428,7 @@ void freeWinFArgs(winFArgs *args)
+ {
+     SDL_free(args->default_folder);
+     SDL_free(args->title);
++    SDL_free(args->description);
+     SDL_free(args->accept);
+     SDL_free(args->cancel);
+ 
+@@ -459,7 +462,7 @@ char *clear_filt_names(const char *filt)
+ // This function returns NOT success or error, but rather whether the callback
+ // was invoked or not (and if it was, no fallback should be attempted to prevent
+ // calling the callback twice). See https://github.com/libsdl-org/SDL/issues/15194
+-bool windows_ShowModernFileFolderDialog(SDL_FileDialogType dialog_type, const char *default_file, SDL_Window *parent, bool allow_many, SDL_DialogFileCallback callback, void *userdata, const char *title, const char *accept, const char *cancel, wchar_t *filter_wchar, int nfilters)
++bool windows_ShowModernFileFolderDialog(SDL_FileDialogType dialog_type, const char *default_file, SDL_Window *parent, bool allow_many, SDL_DialogFileCallback callback, void *userdata, const char *title, const char *description, const char *accept, const char *cancel, wchar_t *filter_wchar, int nfilters)
+ {
+     bool is_save = dialog_type == SDL_FILEDIALOG_SAVEFILE;
+     bool is_folder = dialog_type == SDL_FILEDIALOG_OPENFOLDER;
+@@ -482,8 +485,10 @@ bool windows_ShowModernFileFolderDialog(SDL_FileDialogType dialog_type, const ch
+     IShellItem *pFolderItem = NULL;
+     LPWSTR filePath = NULL;
+     COMDLG_FILTERSPEC *filter_data = NULL;
++    IFileDialogCustomize *pFileDialogCustomize = NULL;
+     char **files = NULL;
+     wchar_t *title_w = NULL;
++    wchar_t *description_w = NULL;
+     wchar_t *accept_w = NULL;
+     wchar_t *cancel_w = NULL;
+     FILEOPENDIALOGOPTIONS pfos;
+@@ -527,6 +532,10 @@ bool windows_ShowModernFileFolderDialog(SDL_FileDialogType dialog_type, const ch
+         goto quit;
+     }
+ 
++    if (is_folder && description && *description && (description_w = WIN_UTF8ToStringW(description)) == NULL) {
++        goto quit;
++    }
++
+     if (accept && (accept_w = WIN_UTF8ToStringW(accept)) == NULL) {
+         goto quit;
+     }
+@@ -595,6 +604,12 @@ bool windows_ShowModernFileFolderDialog(SDL_FileDialogType dialog_type, const ch
+         CHECK(pFileDialog->lpVtbl->SetTitle(pFileDialog, title_w));
+     }
+ 
++    if (description_w) {
++        // CardWirth: show the D directory message as dialog content, separate from its title.
++        CHECK(pFileDialog->lpVtbl->QueryInterface(pFileDialog, &SDL_IID_IFileDialogCustomize, (void **)&pFileDialogCustomize));
++        CHECK(pFileDialogCustomize->lpVtbl->AddText(pFileDialogCustomize, 0x4357, description_w));
++    }
++
+     if (filter_data) {
+         CHECK(pFileDialog->lpVtbl->SetFileTypes(pFileDialog, nfilters, filter_data));
+     }
+@@ -714,6 +729,10 @@ quit:
+         pFileDialog2->lpVtbl->Release(pFileDialog2);
+     }
+ 
++    if (pFileDialogCustomize) {
++        pFileDialogCustomize->lpVtbl->Release(pFileDialogCustomize);
++    }
++
+     if (pFileDialog) {
+         pFileDialog->lpVtbl->Release(pFileDialog);
+     }
+@@ -744,6 +763,8 @@ quit:
+ 
+     SDL_free(title_w);
+ 
++    SDL_free(description_w);
++
+     SDL_free(accept_w);
+ 
+     SDL_free(cancel_w);
+@@ -778,7 +799,7 @@ void windows_ShowFileDialog(void *ptr)
+     wchar_t *filter_wchar = args->filters_str;
+     int nfilters = args->nfilters;
+ 
+-    if (windows_ShowModernFileFolderDialog(is_save ? SDL_FILEDIALOG_SAVEFILE : SDL_FILEDIALOG_OPENFILE, default_file, parent, allow_many, callback, userdata, title, accept, cancel, filter_wchar, nfilters)) {
++    if (windows_ShowModernFileFolderDialog(is_save ? SDL_FILEDIALOG_SAVEFILE : SDL_FILEDIALOG_OPENFILE, default_file, parent, allow_many, callback, userdata, title, NULL, accept, cancel, filter_wchar, nfilters)) {
+         return;
+     }
+ 
+@@ -1078,10 +1099,11 @@ void windows_ShowFolderDialog(void *ptr)
+     int allow_many = args->allow_many;
+     char *default_folder = args->default_folder;
+     const char *title = args->title;
++    const char *description = args->description;
+     const char *accept = args->accept;
+     const char *cancel = args->cancel;
+ 
+-    if (windows_ShowModernFileFolderDialog(SDL_FILEDIALOG_OPENFOLDER, default_folder, window, allow_many, callback, userdata, title, accept, cancel, NULL, 0)) {
++    if (windows_ShowModernFileFolderDialog(SDL_FILEDIALOG_OPENFOLDER, default_folder, window, allow_many, callback, userdata, title, description, accept, cancel, NULL, 0)) {
+         return;
+     }
+ 
+@@ -1091,8 +1113,11 @@ void windows_ShowFolderDialog(void *ptr)
+ 
+     wchar_t *title_w = NULL;
+ 
+-    if (title) {
+-        title_w = WIN_UTF8ToStringW(title);
++    // SHBrowseForFolderW has one caller-controlled text field. Show the D
++    // directory message there when present; otherwise retain SDL's title.
++    const char *fallback_text = (description && *description) ? description : title;
++    if (fallback_text) {
++        title_w = WIN_UTF8ToStringW(fallback_text);
+         if (!title_w) {
+             callback(userdata, NULL, -1);
+             return;
+@@ -1231,7 +1256,7 @@ static void ShowFileDialog(SDL_DialogFileCallback callback, void *userdata, SDL_
+     SDL_DetachThread(thread);
+ }
+ 
+-void ShowFolderDialog(SDL_DialogFileCallback callback, void *userdata, SDL_Window *window, const char *default_location, bool allow_many, const char *title, const char *accept, const char *cancel)
++void ShowFolderDialog(SDL_DialogFileCallback callback, void *userdata, SDL_Window *window, const char *default_location, bool allow_many, const char *title, const char *description, const char *accept, const char *cancel)
+ {
+     winFArgs *args;
+     SDL_Thread *thread;
+@@ -1254,9 +1279,17 @@ void ShowFolderDialog(SDL_DialogFileCallback callback, void *userdata, SDL_Windo
+     args->default_folder = default_location ? SDL_strdup(default_location) : NULL;
+     args->userdata = userdata;
+     args->title = title ? SDL_strdup(title) : NULL;
++    args->description = description ? SDL_strdup(description) : NULL;
+     args->accept = accept ? SDL_strdup(accept) : NULL;
+     args->cancel = cancel ? SDL_strdup(cancel) : NULL;
+ 
++    if (description && !args->description) {
++        SDL_OutOfMemory();
++        callback(userdata, NULL, -1);
++        freeWinFArgs(args);
++        return;
++    }
++
+     thread = SDL_CreateThread(windows_folder_dialog_thread, "SDL_Windows_ShowFolderDialog", (void *) args);
+ 
+     if (thread == NULL) {
+@@ -1279,6 +1312,7 @@ void SDL_SYS_ShowFileDialogWithProperties(SDL_FileDialogType type, SDL_DialogFil
+     bool allow_many = SDL_GetBooleanProperty(props, SDL_PROP_FILE_DIALOG_MANY_BOOLEAN, false);
+     const char *default_location = SDL_GetStringProperty(props, SDL_PROP_FILE_DIALOG_LOCATION_STRING, NULL);
+     const char *title = SDL_GetStringProperty(props, SDL_PROP_FILE_DIALOG_TITLE_STRING, NULL);
++    const char *description = SDL_GetStringProperty(props, SDL_PROP_FILE_DIALOG_DESCRIPTION_STRING, NULL);
+     const char *accept = SDL_GetStringProperty(props, SDL_PROP_FILE_DIALOG_ACCEPT_STRING, NULL);
+     const char *cancel = SDL_GetStringProperty(props, SDL_PROP_FILE_DIALOG_CANCEL_STRING, NULL);
+     bool is_save = false;
+@@ -1292,7 +1326,7 @@ void SDL_SYS_ShowFileDialogWithProperties(SDL_FileDialogType type, SDL_DialogFil
+         break;
+ 
+     case SDL_FILEDIALOG_OPENFOLDER:
+-        ShowFolderDialog(callback, userdata, window, default_location, allow_many, title, accept, cancel);
++        ShowFolderDialog(callback, userdata, window, default_location, allow_many, title, description, accept, cancel);
+         break;
+     };
+ }

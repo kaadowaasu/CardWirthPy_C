@@ -1,0 +1,8 @@
+LISTの基本的な使い方
+
+使用例:
+例1: LIST(42, "STR", TRUE) = LIST(42, "STR", TRUE)
+例2: LIST() = LIST()
+例3: LIST(LIST(1, 2), LIST(3, 4)) = LIST(LIST(1, 2), LIST(3, 4))
+
+任意個数の値からリストを作成します。要素は必要になった時点で評価されます。

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=@CARDWIRTH_DISPLAY_NAME@
+Comment=CardWirthPy_C application
+Exec=@CARDWIRTH_LINUX_EXEC@
+Icon=@CARDWIRTH_LINUX_APP_ID@
+Terminal=false
+Categories=Game;Development;
+StartupNotify=true
+StartupWMClass=@CARDWIRTH_OUTPUT_NAME@

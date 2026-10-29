@@ -1,0 +1,14 @@
+TalkMessageを単行で表示する例
+
+用途:
+singlelineをTrueにすると単行メッセージとして表示します。
+
+主な属性:
+- singleline: 単行表示にするか
+- Text: 表示文
+
+XML例:
+<Talk type="Message" boundarycheck="True" singleline="True">
+<Text>単行で表示するメッセージです。</Text>
+</Talk>
+

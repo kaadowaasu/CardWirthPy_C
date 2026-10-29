@@ -1,0 +1,15 @@
+if(NOT DEFINED CARDWIRTH_EXECUTABLE OR CARDWIRTH_EXECUTABLE STREQUAL "")
+    message(FATAL_ERROR "CARDWIRTH_EXECUTABLE is required")
+endif()
+
+set(marker "CARDWIRTHC_ENCRYPTED_USERDATA_EXCHANGE_V1")
+file(SIZE "${CARDWIRTH_EXECUTABLE}" executable_size)
+string(LENGTH "${marker}" marker_size)
+if(executable_size GREATER_EQUAL marker_size)
+    math(EXPR marker_offset "${executable_size} - ${marker_size}")
+    file(READ "${CARDWIRTH_EXECUTABLE}" tail OFFSET ${marker_offset}
+         LIMIT ${marker_size})
+endif()
+if(NOT tail STREQUAL marker)
+    file(APPEND "${CARDWIRTH_EXECUTABLE}" "${marker}")
+endif()

@@ -1,0 +1,15 @@
+MoveCardの基本的な使い方
+
+用途:
+指定したカードグループのカードを移動・拡縮します。
+
+主な属性:
+- cardgroup: カードグループ名
+- positiontype: 座標の指定方式
+- x・y: 移動量または座標
+- scale: 表示倍率
+- layer: レイヤ
+
+XML例:
+<Move type="Card" cardgroup="再配置用" positiontype="Relative" x="50" scale="95" layer="330"/>
+

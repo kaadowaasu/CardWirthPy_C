@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- API 30 and earlier. Preserve Yado, Scenario, Config, Database and Trash;
+     exclude only packaged mirrors and disposable runtime state. -->
+<full-backup-content>
+    <exclude domain="file" path="app/Data" />
+    <exclude domain="file" path="app/resource" />
+    <exclude domain="file" path="app/.cardwirth-assets-version" />
+    <exclude domain="file" path="app/.cardwirth-assets-staging" />
+    <exclude domain="file" path="app/.cardwirth-assets-backup" />
+    <exclude domain="file" path="Data" />
+    <exclude domain="file" path="Cache" />
+    <exclude domain="file" path="Temp" />
+</full-backup-content>
